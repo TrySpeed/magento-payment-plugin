@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <payment>
+            <speedBitcoinPayment>
+                <active>1</active>
+                <model>SpeedPaymentGatewayFacade</model>
+                <title>Speed Bitcoin Payment</title>
+                <description>Speed is a lightning-network-based bitcoin payment gateway. Use a bitcoin or Lightning wallet to make a payment</description>
+                <speed_mode>test</speed_mode>
+                <sort_order>1</sort_order>
+                <descriptor>Magento 2 Store For Speed Plugin</descriptor>
+                <logsec>1</logsec>
+                <can_use_checkout>1</can_use_checkout>
+            </speedBitcoinPayment>
+        </payment>
+    </default>
+</config>

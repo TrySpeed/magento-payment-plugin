@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+  <group id="test" translate="label" type="text" sortOrder="11" showInDefault="1" showInWebsite="1" showInStore="1">
+    <label>Test Settings</label>
+    <field id="speed_test_pk" translate="label" type="text" sortOrder="7" showInDefault="1" showInWebsite="1" showInStore="1">
+       <label>Test Publishable Key *</label>
+       <validate>validate-testPk</validate>
+       <comment>
+         <![CDATA[Retrieve your API keys from your <a target="_blank" rel="noopener noreferrer" href="https://app.tryspeed.com">Speed account</a>. Any invalid values will be rejected, and only those starting with "pk_test_" will be saved.]]>
+       </comment>
+    </field>
+    <field id="speed_webhook_url" translate="label" type="text" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="1">
+      <label>Webhook URL</label>
+      <frontend_model>Tryspeed\BitcoinPayment\Block\Adminhtml\Form\Field\Testwebhookurl</frontend_model>
+      <comment>
+         <![CDATA[To mark an order as paid using a webhook, simply paste the URL provided above into the "Endpoint URL" field located in the "Speed > Developer > Webhooks" section.]]>
+       </comment>
+    </field>
+    <field id="speed_test_sk" translate="label" type="text" sortOrder="9" showInDefault="1" showInWebsite="1" showInStore="1">
+      <label>Webhook Test Signing Secret Key *</label>
+      <validate>validate-testSsk</validate>
+      <comment>
+        <![CDATA[To locate the "Test Signing Secret Key", access the endpoint added on your <a target="_blank" rel="noopener noreferrer" href="https://app.tryspeed.com">Speed account</a>, locate the signing secret key and click on "reveal". Any invalid values will be rejected, and only those beginning with "wsec_" will be saved.]]>
+      </comment>
+    </field>
+    <field id="key_validation" translate="label" type="text" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+      <label></label>
+      <frontend_model>Tryspeed\BitcoinPayment\Block\Adminhtml\Form\Field\Testvalidation</frontend_model>
+    </field>
+  </group>
+</include>

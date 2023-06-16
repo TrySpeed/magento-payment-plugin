@@ -1,0 +1,84 @@
+/* Module configuration section  */
+.payment-flow-icon {
+    float: left;
+    margin-right: 1.5em;
+    margin-bottom: 1em;
+}
+
+.speed-admin-config .heading {background: url("../img/speed-logo.svg") no-repeat 0 50% / 18rem auto; padding-left: 20rem;}
+.speed-admin-config .button-container {float: right;}
+.speed-admin-config.section-config.active > .admin__collapsible-block + input + fieldset { margin-left: 40px; }
+
+.d-none{
+    display: none;
+}
+
+.speed-admin-config .config table tbody tr .label{
+    width: 30% !important;
+} 
+
+.speed-admin-config .config table tbody tr .value{
+    width: 60% !important;
+} 
+
+/*#row_payment_us_speedBitcoinPayment_basic_active .label, #row_payment_us_speedBitcoinPayment_basic_title .label, #row_payment_us_speedBitcoinPayment_basic_speed_mode .label, #row_payment_us_speedBitcoinPayment_basic_sort_order .label, #row_payment_us_speedBitcoinPayment_test_speed_test_pk .label, #row_payment_us_speedBitcoinPayment_live_speed_live_pk .label, #row_payment_us_speedBitcoinPayment_test_speed_webhook_url .label, #row_payment_us_speedBitcoinPayment_live_speed_webhook_url .label, #row_payment_us_speedBitcoinPayment_test_speed_test_sk .label, #row_payment_us_speedBitcoinPayment_test_speed_test_sk .label {
+    width: 30% !important;
+}
+
+#row_payment_us_speedBitcoinPayment_basic_active .value, #row_payment_us_speedBitcoinPayment_basic_title .value, #row_payment_us_speedBitcoinPayment_basic_speed_mode .value, #row_payment_us_speedBitcoinPayment_basic_sort_order .value, #row_payment_us_speedBitcoinPayment_test_speed_test_pk .value, #row_payment_us_speedBitcoinPayment_live_speed_live_pk .value, #row_payment_us_speedBitcoinPayment_test_speed_webhook_url .value, #row_payment_us_speedBitcoinPayment_live_speed_webhook_url .value, #row_payment_us_speedBitcoinPayment_test_speed_test_sk .value, #row_payment_us_speedBitcoinPayment_live_speed_live_sk .value {
+    width: 60% !important;
+}*/
+/*.speed-admin-config#payment_us_speedBitcoinPayment tbody tr.value {
+    width: 60% !important;
+}
+*/
+#speed_test_webhook_url, #speed_live_webhook_url{
+    width: 80% !important;
+}
+
+.webhook-test-url-success, .webhook-live-url-success {
+    float: right;
+    background: black;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 9px;
+    margin-top: 5px;
+    position: relative;
+    right: 20px;
+    z-index: 1;
+}
+
+/*#row_payment_us_speedBitcoinPayment_modeinfo .value, #row_payment_us_speedBitcoinPayment_modeinfo .label{
+    padding: 0px !important;
+}*/
+
+.speed-admin-config .config table tbody tr .value:has(.transModeInfo){
+    float: right !important;
+    width: auto !important;
+    padding: 0px !important;
+} 
+
+
+/*#row_payment_us_speedBitcoinPayment_modeinfo .value{
+    float: right !important;
+    width: auto !important;
+}*/
+
+.speed-admin-config.section-config.with-button.active .config-heading {
+    margin-bottom: 0rem !important;
+    border-bottom: 2px solid #cccccc;
+    padding-bottom: 15px;
+}
+
+
+#row_payment_us_speedBitcoinPayment_modeinfo td:empty{
+    display: none !important;
+}
+
+.speed-admin-config .config table tbody tr .value .admin__field-option{
+    display: inline-flex !important;
+} 
+
+/*#row_payment_us_speedBitcoinPayment_basic_logsec .admin__field.admin__field-option{
+    display: inline-flex !important;
+}*/
