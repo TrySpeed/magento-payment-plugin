@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="payment">
+            <resource>Tryspeed_BitcoinPayment::config</resource>
+            <group id="speedBitcoinPayment" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Speed Bitcoin Payment</label>
+                <comment>Speed is a lightning-network-based bitcoin payment gateway. Use a bitcoin or Lightning wallet to make a payment</comment>
+                <field id="modeinfo" translate="label" type="text" sortOrder="0" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <frontend_model>Tryspeed\BitcoinPayment\Block\Adminhtml\Form\Field\Modeinfo</frontend_model>
+                </field>
+                <fieldset_css>complex speed-admin-config</fieldset_css>
+                <frontend_model>Tryspeed\BitcoinPayment\Block\Adminhtml\Config\Fieldset</frontend_model>
+                <attribute type="displayIn">recommended_solutions</attribute>
+                <include path="Tryspeed_BitcoinPayment::system/basic.xml"/>
+                <include path="Tryspeed_BitcoinPayment::system/test.xml"/>
+                <include path="Tryspeed_BitcoinPayment::system/live.xml"/>
+            </group>
+        </section>
+    </system>
+</config>

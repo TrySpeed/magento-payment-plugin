@@ -1,0 +1,18 @@
+{
+    "name": "tryspeed/magento-payment-plugin",
+    "type": "magento2-module",
+    "description": "Speed is a lightning-network-based bitcoin payment gateway. Use a bitcoin or Lightning wallet to make a payment.",
+    "version": "1.0.0",
+    "require": {
+        "php": ">=7.4"
+    },
+    "license": [
+        "OSL-3.0"
+    ],
+    "autoload": {
+        "files": [ "registration.php" ],
+        "psr-4": {
+            "Tryspeed\\BitcoinPayment\\": ""
+        }
+    }
+}

@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- Payment Method Facade configuration -->
+    <virtualType name="SpeedPaymentGatewayFacade" type="Magento\Payment\Model\Method\Adapter">
+        <arguments>
+            <argument name="code" xsi:type="string">speedBitcoinPayment</argument>
+            <argument name="formBlockType" xsi:type="string">Magento\Payment\Block\Form</argument>
+            <argument name="infoBlockType" xsi:type="string">Tryspeed\BitcoinPayment\Block\Info</argument>
+            <argument name="valueHandlerPool" xsi:type="object">SpeedBitcoinPaymentValueHandlerPool</argument>
+            <argument name="checkoutHelper" xsi:type="object">\Magento\Checkout\Helper\Data</argument>
+            <argument name="cache" xsi:type="object">\Magento\Framework\App\CacheInterface</argument>
+            <argument name="logger" xsi:type="object">Psr\Log\LoggerInterface</argument>
+        </arguments>
+    </virtualType>
+    <!-- Configuration reader -->
+    <virtualType name="SpeedBitcoinPaymentConfig" type="Magento\Payment\Gateway\Config\Config">
+        <arguments>
+            <argument name="methodCode" xsi:type="string">speedBitcoinPayment</argument>
+        </arguments>
+    </virtualType>
+    <!-- Logger, initialized with CustomPaymentGateway -->
+    <virtualType name="SpeedBitcoinPaymentLogger" type="Magento\Payment\Model\Method\Logger">
+        <arguments>
+            <argument name="config" xsi:type="object">SpeedBitcoinPaymentConfig</argument>
+        </arguments>
+    </virtualType>
+    <type name="Tryspeed\BitcoinPayment\Gateway\Http\Client\ClientMock">
+        <arguments>
+            <argument name="logger" xsi:type="object">SpeedBitcoinPaymentLogger</argument>
+        </arguments>
+    </type>
+    <!-- Value handlers infrastructure -->
+    <virtualType name="SpeedBitcoinPaymentValueHandlerPool" type="Magento\Payment\Gateway\Config\ValueHandlerPool">
+        <arguments>
+            <argument name="handlers" xsi:type="array">
+                <item name="default" xsi:type="string">SpeedBitcoinPaymentValueHandler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="SpeedBitcoinPaymentValueHandler" type="Magento\Payment\Gateway\Config\ConfigValueHandler">
+        <arguments>
+            <argument name="configInterface" xsi:type="object">SpeedBitcoinPaymentConfig</argument>
+        </arguments>
+    </virtualType>
+    <type name="Tryspeed\BitcoinPayment\Block\Info">
+        <arguments>
+            <argument name="config" xsi:type="object">SpeedBitcoinPaymentConfig</argument>
+        </arguments>
+    </type>
+
+    <type name="Tryspeed\BitcoinPayment\Logger\Handler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+            <argument name="dir" xsi:type="object">Magento\Framework\App\Filesystem\DirectoryList</argument>
+        </arguments>
+    </type>
+
+    <type name="Tryspeed\BitcoinPayment\Logger\WebhooksLogger">
+        <arguments>
+            <argument name="name" xsi:type="string">webhooks</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="system" xsi:type="object">Tryspeed\BitcoinPayment\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+</config>

@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<include xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_include.xsd">
+  <group id="basic" translate="label" type="text" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="1">
+    <label>General Settings</label>
+    <field id="active" translate="label" type="select" sortOrder="1" showInDefault="1" showInWebsite="1" showInStore="0">
+       <label>Plugin Status</label>
+       <source_model>Tryspeed\BitcoinPayment\Model\Adminhtml\Source\Status</source_model>
+       <config_path>payment/speedBitcoinPayment/active</config_path>
+    </field>
+    <field id="speed_mode" translate="label" type="select" sortOrder="2" showInDefault="1" showInWebsite="1" showInStore="1">
+        <label>Transaction Mode</label>
+        <source_model>Tryspeed\BitcoinPayment\Model\Adminhtml\Source\Mode</source_model>
+        <config_path>payment/speedBitcoinPayment/speed_mode</config_path>
+    </field>
+    <field id="title" translate="label" type="text" sortOrder="3" showInDefault="1" showInWebsite="1"
+          showInStore="1">
+      <label>Payment Method Name *</label>
+      <frontend_class>validate-length maximum-length-30 minimum-length-1</frontend_class>
+      <config_path>payment/speedBitcoinPayment/title</config_path>
+      <validate>validate-paymentMethod</validate>
+      <comment>
+        <![CDATA[The name entered here will appear on the payment method section of the checkout page.]]>
+      </comment>
+    </field>
+    <field id="description" translate="label" type="textarea" sortOrder="4" showInDefault="1" showInWebsite="1"
+          showInStore="1">
+      <label>Payment Method Description *</label>
+      <frontend_class>validate-length maximum-length-250 minimum-length-1</frontend_class>
+      <config_path>payment/speedBitcoinPayment/description</config_path>
+      <validate>validate-paymentMethodDesc</validate>
+      <comment>
+         <![CDATA[The description entered here will appear on the payment method section of the checkout page.]]>
+       </comment>
+    </field>
+    <field id="sort_order" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="0">
+        <label>Payment Method Sequence *</label>
+        <frontend_class>validate-number</frontend_class>
+        <validate>validate-methodSeq</validate>
+        <config_path>payment/speedBitcoinPayment/sort_order</config_path>
+    </field>
+    <field id="descriptor" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+      <label>Statement Descriptor *</label>
+      <frontend_class>validate-length maximum-length-250 minimum-length-1</frontend_class>
+      <config_path>payment/speedBitcoinPayment/descriptor</config_path>
+      <validate>validate-statementDesc</validate>
+      <comment>
+         <![CDATA[This note will be visible to your customer in their wallet app when they initiate the payment.]]>
+       </comment>
+    </field>
+    <field id="logsec" translate="label comment" type="radios" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
+        <label>Select image you want to show during customer checkout *</label>
+        <source_model>Tryspeed\BitcoinPayment\Model\Config\Source\LogoDisplay</source_model>
+        <config_path>payment/speedBitcoinPayment/logsec</config_path>
+    </field>
+ </group>
+</include>
