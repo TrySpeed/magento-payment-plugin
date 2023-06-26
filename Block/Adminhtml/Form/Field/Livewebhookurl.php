@@ -14,7 +14,7 @@ class Livewebhookurl extends Field
     protected $storeManager;
 
     public function __construct(
-        Tryspeed\BitcoinPayment\Helper\Generic $paymentsHelper,
+        \Tryspeed\BitcoinPayment\Helper\Generic $paymentsHelper,
         StoreManagerInterface $storeManager
     ) {
         $this->paymentsHelper = $paymentsHelper;

@@ -1,6 +1,6 @@
 <?php
 
-namespace TryspeedBitcoinPayment\Helper;
+namespace Tryspeed\BitcoinPayment\Helper;
 
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Tryspeed\BitcoinPayment\Exception\WebhookException;
