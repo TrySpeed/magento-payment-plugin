@@ -59,9 +59,9 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
         } else {
             $this->log("Inside the webhook");
             $response_body = $this->request->getContent();
-            $webhookId = $this->request->getHeader('Webhook-Id');
-            $webhookSignature = $this->request->getHeader('Webhook-Signature');
-            $webhookTimestamp = $this->request->getHeader('Webhook-Timestamp');
+            $webhookId = $this->request->getHeader('webhook-id');
+            $webhookSignature = $this->request->getHeader('webhook-signature');
+            $webhookTimestamp = $this->request->getHeader('webhook-timestamp');
             $headers = [
                 'webhook-signature' => $webhookSignature,
                 'webhook-timestamp' => $webhookTimestamp,
