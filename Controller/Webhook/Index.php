@@ -59,23 +59,27 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
         } else {
             $this->log("Inside the webhook");
             $response_body = $this->request->getContent();
-            $webhookId = $this->request->getHeader('webhook-id');
-            $webhookSignature = $this->request->getHeader('webhook-signature');
-            $webhookTimestamp = $this->request->getHeader('webhook-timestamp');
-            $headers = [
-                'webhook-signature' => $webhookSignature,
-                'webhook-timestamp' => $webhookTimestamp,
-                'webhook-id'  => $webhookId
-            ];
-            $headerData = json_encode($headers);
-            $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-            if ($trans_mode == 'test') {
-                $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/test/speed_test_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-            } elseif ($trans_mode == 'live') {
-                $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/live/speed_live_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-            }
-            $response = $this->webhookhelper->verify($response_body, $headers, $secretkey);
-            if ($response['event_type'] == 'checkout_session.paid') {
+            $request_body_decoded = json_decode($response_body, true);
+            $this->log("After Json data decoded");
+            $this->log("Event Type : " . $request_body_decoded['event_type']);
+            if ($request_body_decoded['event_type'] === "checkout_session.paid" && $request_body_decoded['data']['object']['source'] === "Speed Magento2" && !empty($request_body_decoded['data']['object']['source_id'])) {
+                $this->log("Inside The Webhook Verify Fn");
+                $webhookId = $this->request->getHeader('Webhook-Id');
+                $webhookSignature = $this->request->getHeader('Webhook-Signature');
+                $webhookTimestamp = $this->request->getHeader('Webhook-Timestamp');
+                $headers = [
+                    'webhook-signature' => $webhookSignature,
+                    'webhook-timestamp' => $webhookTimestamp,
+                    'webhook-id'  => $webhookId
+                ];
+                $headerData = json_encode($headers);
+                $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+                if ($trans_mode == 'test') {
+                    $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/test/speed_test_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+                } elseif ($trans_mode == 'live') {
+                    $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/live/speed_live_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+                }
+                $response = $this->webhookhelper->verify($response_body, $headers, $secretkey);
                 $this->log("IN WEBHOOK EVENT");
                 $orderId = $response['data']['object']['source_id'];
                 $this->log("ORDER ID : " . $orderId);
@@ -85,8 +89,8 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
                 $order->setState($orderState)->setStatus(Order::STATE_PROCESSING);
                 $order->save();
                 $this->response->setStatusCode(200);
-            } else {
-                $this->response->setStatusCode(500);
+            }else{
+                $this->response->setStatusCode(204);
             }
         }
     }

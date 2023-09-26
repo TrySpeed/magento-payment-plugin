@@ -135,30 +135,22 @@ define([
             postdata.quoteid = quoteId;
             console.log(postdata);
             placeOrderAction(self.getData(), self.messageContainer)
-                .done(function () {
-                    $.ajax({
-                        url: urlMaker.build("tryspeed/payment"),
-                        type: "POST",
-                        data: postdata,
-                        dataType: "json",
-                        showLoader: true,
-                        success: function (response) {
-                            fullScreenLoader.stopLoader();
-                            window.location.href = response.redirect_url;
-                        },
-                        error: function (error) {
-                            console.log(error);
-                        },
-                    });
-                })
-                .error(function (e) {
-                    globalMessageList.addErrorMessage({
-                        message: $t(e.responseJSON.message),
-                    });
-                })
-                .always(function () {
-                    fullScreenLoader.stopLoader();
+            .done(function () {
+                $.ajax({
+                    url: urlMaker.build("tryspeed/payment"),
+                    type: "POST",
+                    data: postdata,
+                    dataType: "json",
+                    showLoader: true,
+                    success: function (response) {
+                        fullScreenLoader.stopLoader();
+                        window.location.href = response.redirect_url;
+                    },
+                    error: function (error) {
+                        console.log(error);
+                    },
                 });
+            })
         },
         showError: function (message) {
             document.getElementById("actions-toolbar").scrollIntoView(true);
