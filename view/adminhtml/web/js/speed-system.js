@@ -77,7 +77,6 @@ require(
                 ).fail(
                     function (error) {
                         let erroeRes = JSON.parse(error.responseText);
-                        console.log(erroeRes);
                         alert(
                             {
                                 title: $t('Connection failed!'),

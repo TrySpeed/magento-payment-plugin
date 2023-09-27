@@ -133,7 +133,6 @@ define([
             postdata.currency = currentTotals.base_currency_code;
             postdata.amount = currentTotals.base_grand_total;
             postdata.quoteid = quoteId;
-            console.log(postdata);
             placeOrderAction(self.getData(), self.messageContainer)
             .done(function () {
                 $.ajax({
@@ -147,7 +146,6 @@ define([
                         window.location.href = response.redirect_url;
                     },
                     error: function (error) {
-                        console.log(error);
                     },
                 });
             })
