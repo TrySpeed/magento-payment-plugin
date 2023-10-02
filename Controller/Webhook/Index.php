@@ -71,11 +71,12 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
             $moduleInfo = $this->moduleList->getOne('Tryspeed_BitcoinPayment');
             $moduleVersion = $moduleInfo['setup_version'];
             $this->log("Speed Plugin Version : " . $moduleVersion);
+            $this->log("Event Type : " . $request_body_decoded['event_type']);
 
             if(isset($request_body_decoded['data']['object']['source']) && isset($request_body_decoded['data']['object']['source_id'])){
                 if ($request_body_decoded['event_type'] === "checkout_session.paid" && $request_body_decoded['data']['object']['source'] === "Speed Magento2" && !empty($request_body_decoded['data']['object']['source_id'])) {
-                    $this->log("Event Type : " . $request_body_decoded['event_type']);
-                    $this->log("Inside The Webhook Verify Fn");
+                    $orderId = $request_body_decoded['data']['object']['source_id'];
+                    $this->log("ORDER ID : " . $orderId);
                     $webhookId = $this->request->getHeader('Webhook-Id');
                     $webhookSignature = $this->request->getHeader('Webhook-Signature');
                     $webhookTimestamp = $this->request->getHeader('Webhook-Timestamp');
@@ -92,9 +93,6 @@ class Index extends \Magento\Framework\App\Action\Action implements CsrfAwareAct
                         $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/live/speed_live_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
                     }
                     $response = $this->webhookhelper->verify($response_body, $headers, $secretkey);
-                    $this->log("IN WEBHOOK EVENT");
-                    $orderId = $response['data']['object']['source_id'];
-                    $this->log("ORDER ID : " . $orderId);
                     $order = $this->orderRepository;
                     $order->load($orderId);
                     $orderState = Order::STATE_PROCESSING;

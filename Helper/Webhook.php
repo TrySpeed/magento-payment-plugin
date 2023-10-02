@@ -34,14 +34,11 @@ class Webhook
 
     public function verify($payload, $headers, $secret)
     {
-        $this->log('Inside Webhook Helper');
         if (substr($secret, 0, strlen(Webhook::SECRET_PREFIX)) === Webhook::SECRET_PREFIX) {
             $secret = substr($secret, strlen(Webhook::SECRET_PREFIX));
         }
         $this->secret = base64_decode($secret);
-        $this->log("Webhook Secret Key " . $this->secret);
         if (isset($headers['webhook-id']) && isset($headers['webhook-timestamp']) && isset($headers['webhook-signature'])) {
-            $this->log("WEBHOOK VERIFY IF");
             $msgId = $headers['webhook-id'];
             $msgTimestamp = $headers['webhook-timestamp'];
             $msgSignature = $headers['webhook-signature'];
@@ -59,7 +56,6 @@ class Webhook
 
         if (strcmp($version, "v1") == 0) {
             if (hash_equals($expectedSignature, $passedSignature)) {
-                $this->log("Webhook Sign Verifcation Successfull");
                 return json_decode($payload, true);
             } else {
                 $this->log("Webhook Signature not matching");
@@ -73,8 +69,6 @@ class Webhook
 
     public function sign($msgId, $timestamp, $payload)
     {
-        $this->log("WEBHOOK VERIFY SIGN FN");
-        $this->log($timestamp);
         $is_positive_integer = ctype_digit($timestamp);
         if (!$is_positive_integer) {
             $this->log("WEBHOOK TimeStamp is not positive integer");
