@@ -9,17 +9,21 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
 class CheckWebhookStatus extends AbstractDataAssignObserver
-{   
+{
     protected $scopeConfig;
     protected $storeManager;
+    protected $webhooksLogger;
 
     public function __construct(
         ScopeConfigInterface $scopeConfig,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->storeManager = $storeManager;
+        $this->webhooksLogger = $webhooksLogger;
     }
+
     /**
      * 
      * @return void
@@ -70,15 +74,32 @@ class CheckWebhookStatus extends AbstractDataAssignObserver
                 'speed-version: 2022-10-15'
             ]
         );
-        $result = json_decode(curl_exec($curl));
-        if($result){
-            if($result->status == 'active'){
-                return true;
-            }else{
-                return false;
-            }
-        }else{
+        $response = curl_exec($curl);
+        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+
+        $result = $response ? json_decode($response) : null;
+
+        if ($httpCode !== 200 || !$result) {
+            $this->log('Webhook verify returned HTTP ' . ($httpCode ?? 'n/a'));
             return false;
         }
+
+        if (isset($result->exists) && $result->exists === true) {
+            if (isset($result->status) && strtolower($result->status) === 'active') {
+                $this->log('Webhook verify: ACTIVE');
+                return true;
+            }
+            $this->log('Webhook verify: exists but not ACTIVE (status=' . ($result->status ?? 'n/a') . ')');
+            return false;
+        }
+
+        $this->log('Webhook verify: endpoint not found for provided URL/secret');
+        return false;
+    }
+
+    public function log($msg)
+    {
+        $this->webhooksLogger->info($msg);
     }
 }

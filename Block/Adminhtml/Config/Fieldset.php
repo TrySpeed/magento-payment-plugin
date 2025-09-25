@@ -49,9 +49,7 @@ class Fieldset extends \Magento\Config\Block\System\Config\Form\Fieldset
     {
         $html = '<div class="config-heading" >';
 
-        $groupConfig = $element->getGroup();
-
-        $htmlId = $element->getHtmlId();    
+        $htmlId = $element->getHtmlId();
         $html .= '<div class="button-container"><button type="button"' .
             ' class="button action-configure' .
             '" id="' .
