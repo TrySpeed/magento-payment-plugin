@@ -9,17 +9,21 @@ use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\StoreManagerInterface;
 
 class CheckWebhookStatus extends AbstractDataAssignObserver
-{   
+{
     protected $scopeConfig;
     protected $storeManager;
+    protected $webhooksLogger;
 
     public function __construct(
         ScopeConfigInterface $scopeConfig,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger
     ) {
         $this->scopeConfig = $scopeConfig;
         $this->storeManager = $storeManager;
+        $this->webhooksLogger = $webhooksLogger;
     }
+
     /**
      * 
      * @return void
@@ -71,14 +75,19 @@ class CheckWebhookStatus extends AbstractDataAssignObserver
             ]
         );
         $result = json_decode(curl_exec($curl));
-        if($result){
-            if($result->status == 'active'){
+        if ($result) {
+            if ($result->status == 'ACTIVE') {
                 return true;
-            }else{
+            } else {
                 return false;
             }
-        }else{
+        } else {
             return false;
         }
+    }
+
+    public function log($msg)
+    {
+        $this->webhooksLogger->info($msg);
     }
 }

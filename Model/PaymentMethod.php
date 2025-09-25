@@ -16,6 +16,8 @@ use Magento\Framework\Exception\CouldNotSaveException;
 class PaymentMethod extends \Magento\Payment\Model\Method\Adapter
 {
     protected $_code = "speedBitcoinPayment";
+    protected $_canUseCheckout = true;
+    protected $_canUseInternal = true;
     protected $_isInitializeNeeded = false;
     protected $_canUseForMultishipping = false;
 }

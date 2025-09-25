@@ -37,7 +37,6 @@ class Livewebhookurl extends Field
     {
         $storeUrl = $this->storeManager->getStore()->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_WEB);
         $webhook_url = $storeUrl . 'tryspeed/webhook';
-        $webhook_url = preg_replace("/^http:/i", "https:", $webhook_url);
         // Replace field markup with validation button
         $title = __('Copy URL');
         $html = <<<TEXT
