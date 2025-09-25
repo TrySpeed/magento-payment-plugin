@@ -73,7 +73,7 @@ require([
         });
       } else {
         if (apiRes.exists) {
-          if (apiRes.status === "ACTIVE") {
+          if (apiRes.status.toLowerCase() === "active") {
             alert({
               title: $t("Connection Successful!"),
               content: $t("Your " + mode + " Speed Credentials are validated"),
@@ -86,6 +86,13 @@ require([
               ),
             });
           }
+        } else {
+          alert({
+            title: $t("Connection failed!"),
+            content: $t(
+              "We could not find a matching webhook for the provided URL and signing secret. Please verify both and try again."
+            ),
+          });
         }
       }
     } catch (error) {
