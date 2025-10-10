@@ -41,7 +41,7 @@ define([
       logoStyle: null,
     },
     initObservable: function () {
-      this._super().observe(["logoImage"]);
+      this._super().observe(["logoImage", "shouldDisplayImage"]);
 
       var self = this;
       var currentTotals = quote.totals();
@@ -72,23 +72,20 @@ define([
       }, this);
 
       quote.totals.subscribe(function (totals) {
-        if (
-          JSON.stringify(totals.total_segments) ==
-          JSON.stringify(currentTotals.total_segments)
-        ) {
+        var newSegs = (totals && totals.total_segments) || [];
+        var oldSegs = (currentTotals && currentTotals.total_segments) || [];
+        if (JSON.stringify(newSegs) === JSON.stringify(oldSegs)) {
           return;
         }
-
         currentTotals = totals;
       }, this);
 
-      this.logoImage =
-        window.checkoutConfig.payment.speedBitcoinPayment.logoImage;
-      if (window.checkoutConfig.payment.speedBitcoinPayment.logoDisplay == 1) {
-        this.shouldDisplayImage = ko.observable(true);
-      } else {
-        this.shouldDisplayImage = ko.observable(false);
-      }
+      this.logoImage(
+        window.checkoutConfig.payment.speedBitcoinPayment.logoImage
+      );
+      this.shouldDisplayImage(
+        window.checkoutConfig.payment.speedBitcoinPayment.logoDisplay == 1
+      );
       return this;
     },
     isAddressSame: function (address1, address2) {
@@ -101,7 +98,7 @@ define([
       if (flag == 1) {
         $("#image-container").show();
       } else {
-        $("#image-containerimage-container").hide();
+        $("#image-container").hide();
       }
     },
     getPaymentDescription: function () {
@@ -162,33 +159,41 @@ define([
         // If something goes wrong with assigner, still continue but log to console
         console.error("agreements assignment failed:", e);
       }
-
+      this.isPlaceOrderActionAllowed(false);
       fullScreenLoader.startLoader();
-      var currentTotals = quote.totals();
+      var currentTotals = quote.totals() || {};
       var quoteId = quote.getQuoteId();
       var postdata = {};
       postdata.currency = currentTotals.base_currency_code;
       postdata.amount = currentTotals.base_grand_total;
       postdata.quoteid = quoteId;
-      placeOrderAction(self.getData(), self.messageContainer).done(function () {
-        $.ajax({
-          url: urlMaker.build("tryspeed/payment"),
-          type: "POST",
-          data: postdata,
-          dataType: "json",
-          showLoader: true,
-          success: function (response) {
-            fullScreenLoader.stopLoader();
-            window.location.href = response.redirect_url;
-          },
-          error: function () {
-            fullScreenLoader.stopLoader();
-            self.messageContainer.addErrorMessage({
-              message: $t("Payment redirection failed."),
-            });
-          },
+      placeOrderAction(paymentData, self.messageContainer)
+        .done(function () {
+          $.ajax({
+            url: urlMaker.build("tryspeed/payment"),
+            type: "POST",
+            data: postdata,
+            dataType: "json",
+            showLoader: true,
+            success: function (response) {
+              fullScreenLoader.stopLoader();
+              window.location.href = response.redirect_url;
+            },
+            error: function () {
+              fullScreenLoader.stopLoader();
+              self.messageContainer.addErrorMessage({
+                message: $t("Payment redirection failed."),
+              });
+            },
+          }).always(function () {
+            self.isPlaceOrderActionAllowed(true);
+          });
+        })
+        .fail(function () {
+          fullScreenLoader.stopLoader();
+          self.isPlaceOrderActionAllowed(true);
         });
-      });
+      return false;
     },
     showError: function (message, element) {
       if (element && typeof element.scrollIntoView === "function") {
