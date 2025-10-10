@@ -3,8 +3,8 @@
     <policies>    
         <policy id="connect-src">
             <values>
-                <value id="speed_dev_api" type="host">*.api.tryspeed.dev</value>
-                <value id="speed_api" type="host">*.app.tryspeed.com</value>
+                <value id="speed_dev_api" type="host">*.tryspeed.dev</value>
+                <value id="speed_api" type="host">*.tryspeed.com</value>
             </values>
         </policy>
     </policies>
