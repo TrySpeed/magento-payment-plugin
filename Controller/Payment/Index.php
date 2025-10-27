@@ -41,11 +41,11 @@ class Index extends \Magento\Framework\App\Action\Action
     public function execute()
     {
         $data = $this->getRequest()->getPostValue();
-        $success_url = $this->storeManager->getStore()->getUrl('checkout/onepage/success');
-        $cancel_url = $this->storeManager->getStore()->getUrl('tryspeed/payment/cancel');
-        $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $order = $this->checkoutSession->getLastRealOrder();
         $orderId = $order->getEntityId();
+        $success_url = $this->storeManager->getStore()->getUrl('checkout/onepage/success');
+        $cancel_url = $this->storeManager->getStore()->getUrl('tryspeed/payment/cancel', ['order_id' => $orderId, '_secure' => true]);
+        $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         if ($trans_mode == 'test') {
             $key = $this->scopeConfig->getValue('payment/speedBitcoinPayment/test/speed_test_pk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         } elseif ($trans_mode == 'live') {
