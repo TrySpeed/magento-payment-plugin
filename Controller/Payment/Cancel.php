@@ -37,14 +37,13 @@ class Cancel extends Action
                 $order->cancel();
                 $order->addStatusHistoryComment(__('Customer canceled the payment.'));
                 $order->save();
-                $this->checkoutSession->restoreQuote();
                 $this->log("Order canceled by customer Order Id - " . $order->getId());
             }
+            $this->checkoutSession->restoreQuote();
         } catch (\Exception $e) {
             $this->logger->error('Error canceling order', ['exception' => $e->getMessage()]);
             $this->messageManager->addErrorMessage(__('Unable to cancel the order. Please contact support.'));
         }
-
         return $this->_redirect('checkout/onepage/failure');
     }
 
