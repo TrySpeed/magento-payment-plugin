@@ -15,6 +15,7 @@ use Magento\Sales\Model\Order\Email\Sender\InvoiceSender;
 use Psr\Log\LoggerInterface;
 use Tryspeed\BitcoinPayment\Helper\Webhook as WebhookHelper;
 use Tryspeed\BitcoinPayment\Logger\WebhooksLogger;
+use Magento\Framework\App\ProductMetadataInterface;
 
 class Index extends Action implements CsrfAwareActionInterface
 {
@@ -28,6 +29,7 @@ class Index extends Action implements CsrfAwareActionInterface
     protected $transaction;
     protected $invoiceSender;
     protected $logger;
+    protected $productMetadata;
 
     public function __construct(
         Context $context,
@@ -40,7 +42,8 @@ class Index extends Action implements CsrfAwareActionInterface
         InvoiceService $invoiceService,
         Transaction $transaction,
         InvoiceSender $invoiceSender,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        ProductMetadataInterface $productMetadata
     ) {
         parent::__construct($context);
         $this->scopeConfig = $scopeConfig;
@@ -53,6 +56,7 @@ class Index extends Action implements CsrfAwareActionInterface
         $this->transaction = $transaction;
         $this->invoiceSender = $invoiceSender;
         $this->logger = $logger;
+        $this->productMetadata = $productMetadata;
     }
 
     /**
@@ -82,6 +86,9 @@ class Index extends Action implements CsrfAwareActionInterface
 
             $payload = $this->request->getContent();
             $data = json_decode($payload, true);
+            $magentoVersion = $this->productMetadata->getVersion();
+            $this->log("Magento Version : " . $magentoVersion);
+
 
             if (!$data) {
                 $this->log('Invalid JSON payload received');
