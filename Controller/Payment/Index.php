@@ -5,7 +5,6 @@ namespace Tryspeed\BitcoinPayment\Controller\Payment;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\Framework\Data\Form\FormKey;
 
 class Index extends \Magento\Framework\App\Action\Action
 {
@@ -17,7 +16,6 @@ class Index extends \Magento\Framework\App\Action\Action
     protected $checkoutSession;
     protected $quoteFactory;
     protected $webhooksLogger;
-    protected $formKey;
 
     public function __construct(
         Context $context,
@@ -28,8 +26,7 @@ class Index extends \Magento\Framework\App\Action\Action
         \Magento\Checkout\Model\Session $checkoutSession,
         \Magento\Quote\Model\QuoteFactory $quoteFactory,
         StoreManagerInterface $storeManager,
-        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger,
-        FormKey $formKey
+        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger
     ) {
         $this->resultJsonFactory = $resultJsonFactory;
         $this->resultPageFactory = $resultPageFactory;
@@ -39,7 +36,6 @@ class Index extends \Magento\Framework\App\Action\Action
         $this->quoteFactory = $quoteFactory;
         $this->storeManager = $storeManager;
         $this->webhooksLogger = $webhooksLogger;
-        $this->formKey = $formKey;
         parent::__construct($context);
     }
     public function execute()
