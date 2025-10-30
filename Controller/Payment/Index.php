@@ -48,7 +48,15 @@ class Index extends \Magento\Framework\App\Action\Action
         $order = $this->checkoutSession->getLastRealOrder();
         $orderId = $order->getEntityId();
         $success_url = $this->storeManager->getStore()->getUrl('checkout/onepage/success');
-        $cancel_url = $this->storeManager->getStore()->getUrl('tryspeed/payment/cancel', ['order_id' => (int)$orderId, 'form_key' => $this->formKey->getFormKey(), '_secure' => true]);
+        $cancel_url = $this->storeManager->getStore()->getUrl(
+            'tryspeed/payment/cancel',
+            [
+                '_secure' => true,
+                '_query' => [
+                    'order_id' => (int)$orderId,
+                ]
+            ]
+        );
         $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         if ($trans_mode == 'test') {
             $key = $this->scopeConfig->getValue('payment/speedBitcoinPayment/test/speed_test_pk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);

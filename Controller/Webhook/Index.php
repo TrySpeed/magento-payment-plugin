@@ -98,7 +98,6 @@ class Index extends Action implements CsrfAwareActionInterface
 
             $eventType = $data['event_type'] ?? null;
             $checkoutData = $data['data']['object'] ?? null;
-            $this->log("Event Type : " . $eventType);
 
             if (!$eventType || !$checkoutData) {
                 $this->log('Webhook missing event_type or data.object');
