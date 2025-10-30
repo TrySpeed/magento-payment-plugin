@@ -8,6 +8,7 @@ use Magento\Sales\Model\OrderFactory;
 use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Checkout\Model\Session as CheckoutSession;
 use Psr\Log\LoggerInterface;
+use Magento\Framework\Data\Form\FormKey\Validator as FormKeyValidator;
 
 class Cancel extends Action
 {
@@ -16,6 +17,7 @@ class Cancel extends Action
     protected $orderResource;
     protected $webhooksLogger;
     protected $logger;
+    protected $formKeyValidator;
 
     public function __construct(
         Context $context,
@@ -23,22 +25,37 @@ class Cancel extends Action
         OrderFactory $orderFactory,
         OrderResource $orderResource,
         \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        FormKeyValidator $formKeyValidator
     ) {
         $this->checkoutSession = $checkoutSession;
         $this->orderFactory = $orderFactory;
         $this->orderResource = $orderResource;
         $this->webhooksLogger = $webhooksLogger;
         $this->logger = $logger;
+        $this->formKeyValidator = $formKeyValidator;
         parent::__construct($context);
     }
 
     public function execute()
     {
         try {
-            $orderId = $this->getRequest()->getParam('order_id');
+            $orderId = (int)$this->getRequest()->getParam('order_id');
             if (!$orderId) {
                 $this->messageManager->addErrorMessage(__('Order ID missing.'));
+                return $this->_redirect('checkout/cart');
+            }
+
+            if (!$this->formKeyValidator->validate($this->getRequest())) {
+                $this->logger->warning('Cancel blocked: invalid form key', ['order_id' => $orderId]);
+                $this->messageManager->addErrorMessage(__('Invalid request.'));
+                return $this->_redirect('checkout/cart');
+            }
+
+            $lastOrder = $this->checkoutSession->getLastRealOrder();
+            if (!$lastOrder || (int)$lastOrder->getId() !== $orderId) {
+                $this->logger->warning('Cancel blocked: order mismatch', ['param_id' => $orderId, 'session_id' => $lastOrder ? $lastOrder->getId() : null]);
+                $this->messageManager->addErrorMessage(__('Unable to cancel this order.'));
                 return $this->_redirect('checkout/cart');
             }
 

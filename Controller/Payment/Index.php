@@ -5,6 +5,7 @@ namespace Tryspeed\BitcoinPayment\Controller\Payment;
 use Magento\Framework\App\Action\Context;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use Magento\Framework\Data\Form\FormKey;
 
 class Index extends \Magento\Framework\App\Action\Action
 {
@@ -16,6 +17,7 @@ class Index extends \Magento\Framework\App\Action\Action
     protected $checkoutSession;
     protected $quoteFactory;
     protected $webhooksLogger;
+    protected $formKey;
 
     public function __construct(
         Context $context,
@@ -26,7 +28,8 @@ class Index extends \Magento\Framework\App\Action\Action
         \Magento\Checkout\Model\Session $checkoutSession,
         \Magento\Quote\Model\QuoteFactory $quoteFactory,
         StoreManagerInterface $storeManager,
-        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger
+        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger,
+        FormKey $formKey
     ) {
         $this->resultJsonFactory = $resultJsonFactory;
         $this->resultPageFactory = $resultPageFactory;
@@ -36,6 +39,7 @@ class Index extends \Magento\Framework\App\Action\Action
         $this->quoteFactory = $quoteFactory;
         $this->storeManager = $storeManager;
         $this->webhooksLogger = $webhooksLogger;
+        $this->formKey = $formKey;
         parent::__construct($context);
     }
     public function execute()
@@ -44,7 +48,7 @@ class Index extends \Magento\Framework\App\Action\Action
         $order = $this->checkoutSession->getLastRealOrder();
         $orderId = $order->getEntityId();
         $success_url = $this->storeManager->getStore()->getUrl('checkout/onepage/success');
-        $cancel_url = $this->storeManager->getStore()->getUrl('tryspeed/payment/cancel', ['order_id' => $orderId, '_secure' => true]);
+        $cancel_url = $this->storeManager->getStore()->getUrl('tryspeed/payment/cancel', ['order_id' => (int)$orderId, 'form_key' => $this->formKey->getFormKey(), '_secure' => true]);
         $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         if ($trans_mode == 'test') {
             $key = $this->scopeConfig->getValue('payment/speedBitcoinPayment/test/speed_test_pk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
