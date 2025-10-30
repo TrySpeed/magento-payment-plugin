@@ -47,7 +47,6 @@ class Cancel extends Action
 
             if ($order && $order->getState() !== \Magento\Sales\Model\Order::STATE_CANCELED) {
                 $order->cancel();
-                $order->addStatusHistoryComment(__('Customer canceled the payment.'));
                 $this->orderResource->save($order);
                 $this->log("Order canceled by customer. Order ID: {$orderId}");
             }
@@ -58,7 +57,7 @@ class Cancel extends Action
             $this->messageManager->addErrorMessage(__('Unable to cancel the order. Please contact support.'));
         }
 
-        return $this->_redirect('checkout/onepage/failure');
+        return $this->_redirect('checkout/cart');
     }
 
     public function log($msg)
