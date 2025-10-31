@@ -19,5 +19,11 @@ class PaymentMethod extends \Magento\Payment\Model\Method\Adapter
     protected $_canUseCheckout = true;
     protected $_canUseInternal = true;
     protected $_isInitializeNeeded = false;
-    protected $_canUseForMultishipping = false;
+    protected $_canUseForMultishipping = true;
+    protected $_canAuthorize = true;
+    protected $_canCapture = true;
+    protected $_canCapturePartial = true;
+    protected $_canRefund = true;
+    protected $_canRefundInvoicePartial = true;
+    protected $_canVoid = true;
 }
