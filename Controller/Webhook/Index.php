@@ -16,6 +16,7 @@ use Psr\Log\LoggerInterface;
 use Tryspeed\BitcoinPayment\Helper\Webhook as WebhookHelper;
 use Tryspeed\BitcoinPayment\Logger\WebhooksLogger;
 use Magento\Framework\App\ProductMetadataInterface;
+use Magento\Sales\Model\Order\Email\Sender\OrderSender;
 
 class Index extends Action implements CsrfAwareActionInterface
 {
@@ -30,6 +31,7 @@ class Index extends Action implements CsrfAwareActionInterface
     protected $invoiceSender;
     protected $logger;
     protected $productMetadata;
+    protected $orderSender;
 
     public function __construct(
         Context $context,
@@ -43,7 +45,8 @@ class Index extends Action implements CsrfAwareActionInterface
         Transaction $transaction,
         InvoiceSender $invoiceSender,
         LoggerInterface $logger,
-        ProductMetadataInterface $productMetadata
+        ProductMetadataInterface $productMetadata,
+        OrderSender $orderSender
     ) {
         parent::__construct($context);
         $this->scopeConfig = $scopeConfig;
@@ -57,6 +60,7 @@ class Index extends Action implements CsrfAwareActionInterface
         $this->invoiceSender = $invoiceSender;
         $this->logger = $logger;
         $this->productMetadata = $productMetadata;
+        $this->orderSender = $orderSender;
     }
 
     /**
@@ -149,6 +153,11 @@ class Index extends Action implements CsrfAwareActionInterface
 
                 $payment->save();
                 $this->log("Payment information saved for order ID: {$orderId}");
+                if (!$order->getEmailSent()) {
+                    $this->orderSender->send($order);
+                    $order->addStatusHistoryComment(__('Order paid, confirmation email sent.'));
+                    $this->orderRepository->save($order);
+                }
             }
 
             // Automatically create invoice
