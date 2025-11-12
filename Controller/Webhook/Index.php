@@ -154,6 +154,8 @@ class Index extends Action implements CsrfAwareActionInterface
                 $payment->save();
                 $this->log("Payment information saved for order ID: {$orderId}");
                 if (!$order->getEmailSent()) {
+                    $order->setSendEmail(true);
+                    $order->setCanSendNewEmailFlag(true);
                     $this->orderSender->send($order);
                     $order->addStatusHistoryComment(__('Order paid, confirmation email sent.'));
                     $this->orderRepository->save($order);
