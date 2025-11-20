@@ -44,7 +44,7 @@ class CheckWebhookStatus extends AbstractDataAssignObserver
     {
         $module_status = $this->scopeConfig->getValue('payment/speedBitcoinPayment/active', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         if ($module_status == 0) {
-            $this->log('The Plugin is disabled');
+            $this->log('Speed bitcoin payment plugin is disabled.');
             return false;
         }
         $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
