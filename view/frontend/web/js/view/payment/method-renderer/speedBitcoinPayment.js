@@ -40,6 +40,9 @@ define([
       logoImage: null,
       logoStyle: null,
     },
+
+    webhookValidated: false,
+
     initObservable: function () {
       this._super().observe(["logoImage", "shouldDisplayImage"]);
 
@@ -47,38 +50,25 @@ define([
       var currentTotals = quote.totals();
       var currentBillingAddress = quote.billingAddress();
       var currentShippingAddress = quote.shippingAddress();
+
       quote.billingAddress.subscribe(function (address) {
-        if (!address) {
-          return;
-        }
-
-        if (self.isAddressSame(address, currentBillingAddress)) {
-          return;
-        }
-
+        if (!address) return;
+        if (self.isAddressSame(address, currentBillingAddress)) return;
         currentBillingAddress = address;
-      }, this);
+      });
 
       quote.shippingAddress.subscribe(function (address) {
-        if (!address) {
-          return;
-        }
-
-        if (self.isAddressSame(address, currentShippingAddress)) {
-          return;
-        }
-
+        if (!address) return;
+        if (self.isAddressSame(address, currentShippingAddress)) return;
         currentShippingAddress = address;
-      }, this);
+      });
 
       quote.totals.subscribe(function (totals) {
         var newSegs = (totals && totals.total_segments) || [];
         var oldSegs = (currentTotals && currentTotals.total_segments) || [];
-        if (JSON.stringify(newSegs) === JSON.stringify(oldSegs)) {
-          return;
-        }
+        if (JSON.stringify(newSegs) === JSON.stringify(oldSegs)) return;
         currentTotals = totals;
-      }, this);
+      });
 
       this.logoImage(
         window.checkoutConfig.payment.speedBitcoinPayment.logoImage
@@ -86,40 +76,118 @@ define([
       this.shouldDisplayImage(
         window.checkoutConfig.payment.speedBitcoinPayment.logoDisplay == 1
       );
+
+      self.isPlaceOrderActionAllowed(false);
+
       return this;
     },
+
+    isStillSelected: function () {
+      return (
+        quote.paymentMethod() && quote.paymentMethod().method === this.getCode()
+      );
+    },
+
+    selectPaymentMethod: function () {
+      this._super();
+
+      var self = this;
+
+      $.ajax({
+        url: urlMaker.build("tryspeed/webhook/check"),
+        type: "GET",
+        showLoader: true,
+
+        success: function (response) {
+          if (!self.isStillSelected()) return;
+
+          if (!response.active) {
+            self.webhookValidated = false;
+
+            self.messageContainer.addErrorMessage({
+              message: $t(
+                "Speed Bitcoin Payment method is currently unavailable. Please choose a different payment option."
+              ),
+            });
+
+            $('input[name="payment[method]"]').prop("checked", false);
+            if (typeof self.deselectPaymentMethod === "function")
+              self.deselectPaymentMethod();
+
+            self.isPlaceOrderActionAllowed(false);
+            return;
+          }
+
+          self.webhookValidated = true;
+          self.isPlaceOrderActionAllowed(true);
+        },
+
+        error: function () {
+          if (!self.isStillSelected()) return;
+
+          self.webhookValidated = false;
+
+          self.messageContainer.addErrorMessage({
+            message: $t("Unable to validate Webhook. Please try again."),
+          });
+
+          $('input[name="payment[method]"]').prop("checked", false);
+          if (typeof self.deselectPaymentMethod === "function")
+            self.deselectPaymentMethod();
+
+          self.isPlaceOrderActionAllowed(false);
+        },
+      });
+
+      return true;
+    },
+
     isAddressSame: function (address1, address2) {
       var a = this.stringifyAddress(address1);
       var b = this.stringifyAddress(address2);
-
       return a == b;
     },
+
     showHideLogo: function (flag) {
-      if (flag == 1) {
-        $("#image-container").show();
-      } else {
-        $("#image-container").hide();
-      }
+      if (flag == 1) $("#image-container").show();
+      else $("#image-container").hide();
     },
+
     getPaymentDescription: function () {
       return window.checkoutConfig.payment.speedBitcoinPayment.description;
     },
-    stringifyAddress: function (address) {
-      if (typeof address == "undefined" || !address) {
-        return null;
-      }
 
+    stringifyAddress: function (address) {
+      if (!address) return null;
       return JSON.stringify({
-        countryId:
-          typeof address.countryId != "undefined" ? address.countryId : "",
-        region: typeof address.region != "undefined" ? address.region : "",
-        city: typeof address.city != "undefined" ? address.city : "",
-        postcode:
-          typeof address.postcode != "undefined" ? address.postcode : "",
+        countryId: address.countryId || "",
+        region: address.region || "",
+        city: address.city || "",
+        postcode: address.postcode || "",
       });
     },
+
     placeCheckoutOrder: function () {
       var self = this;
+
+      if (!this.isStillSelected()) {
+        this.messageContainer.addErrorMessage({
+          message: $t("Please select Speed Bitcoin Payment."),
+        });
+        self.isPlaceOrderActionAllowed(false);
+        return false;
+      }
+
+      if (!this.webhookValidated) {
+        this.messageContainer.addErrorMessage({
+          message: $t(
+            "Speed Bitcoin Payment method is currently unavailable. Please choose a different payment option."
+          ),
+        });
+        self.isPlaceOrderActionAllowed(false);
+        return false;
+      }
+
       if (!agreementValidator.validate()) {
         return false;
       }
@@ -127,46 +195,28 @@ define([
       var paymentData = self.getData();
 
       try {
-        // Preferred: agreementsAssigner has an 'assign' method
         if (
           agreementsAssigner &&
           typeof agreementsAssigner.assign === "function"
         ) {
           agreementsAssigner.assign(paymentData);
-        }
-        // Some installations export a function directly
-        else if (typeof agreementsAssigner === "function") {
+        } else if (typeof agreementsAssigner === "function") {
           agreementsAssigner(paymentData);
         }
-        // Last resort: gather checked agreement ids from CheckoutAgreements view-model
-        else {
-          var selectedIds = [];
-          if (CheckoutAgreements && CheckoutAgreements.agreements) {
-            var arr = CheckoutAgreements.agreements();
-            arr.forEach(function (a) {
-              // agreement id property may vary: 'agreement_id' is most common
-              var id = a.agreement_id || a.id || a.agreementId || null;
-              if (a.checked && id) {
-                selectedIds.push(id);
-              }
-            });
-          }
-
-          paymentData.additional_data = paymentData.additional_data || {};
-          paymentData.additional_data.agreement_ids = selectedIds;
-        }
       } catch (e) {
-        // If something goes wrong with assigner, still continue but log to console
-        console.error("agreements assignment failed:", e);
+        console.error("Agreement assigner error:", e);
       }
+
       this.isPlaceOrderActionAllowed(false);
       fullScreenLoader.startLoader();
-      var currentTotals = quote.totals() || {};
-      var quoteId = quote.getQuoteId();
-      var postdata = {};
-      postdata.currency = currentTotals.base_currency_code;
-      postdata.amount = currentTotals.base_grand_total;
-      postdata.quoteid = quoteId;
+
+      var totals = quote.totals() || {};
+      var postdata = {
+        currency: totals.base_currency_code,
+        amount: totals.base_grand_total,
+        quoteid: quote.getQuoteId(),
+      };
+
       placeOrderAction(paymentData, self.messageContainer)
         .done(function () {
           $.ajax({
@@ -193,10 +243,12 @@ define([
           fullScreenLoader.stopLoader();
           self.isPlaceOrderActionAllowed(true);
         });
+
       return false;
     },
+
     showError: function (message, element) {
-      if (element && typeof element.scrollIntoView === "function") {
+      if (element && element.scrollIntoView) {
         element.scrollIntoView({ behavior: "smooth", block: "center" });
       }
       this.messageContainer.addErrorMessage({ message: message });
