@@ -82,6 +82,12 @@ define([
       return this;
     },
 
+    isStillSelected: function () {
+      return (
+        quote.paymentMethod() && quote.paymentMethod().method === this.getCode()
+      );
+    },
+
     selectPaymentMethod: function () {
       this._super();
 
@@ -91,7 +97,10 @@ define([
         url: urlMaker.build("tryspeed/webhook/check"),
         type: "GET",
         showLoader: true,
+
         success: function (response) {
+          if (!self.isStillSelected()) return;
+
           if (!response.active) {
             self.webhookValidated = false;
 
@@ -102,28 +111,30 @@ define([
             });
 
             $('input[name="payment[method]"]').prop("checked", false);
-
-            if (typeof self.deselectPaymentMethod === "function") {
+            if (typeof self.deselectPaymentMethod === "function")
               self.deselectPaymentMethod();
-            }
+
             self.isPlaceOrderActionAllowed(false);
-          } else {
-            self.webhookValidated = true;
-            self.isPlaceOrderActionAllowed(true);
+            return;
           }
+
+          self.webhookValidated = true;
+          self.isPlaceOrderActionAllowed(true);
         },
+
         error: function () {
+          if (!self.isStillSelected()) return;
+
           self.webhookValidated = false;
 
           self.messageContainer.addErrorMessage({
-            message: $t("Unable to verify Webhook status."),
+            message: $t("Unable to validate Webhook. Please try again."),
           });
 
           $('input[name="payment[method]"]').prop("checked", false);
-
-          if (typeof self.deselectPaymentMethod === "function") {
+          if (typeof self.deselectPaymentMethod === "function")
             self.deselectPaymentMethod();
-          }
+
           self.isPlaceOrderActionAllowed(false);
         },
       });
@@ -131,9 +142,6 @@ define([
       return true;
     },
 
-    /**
-     * Compare two addresses to detect changes
-     */
     isAddressSame: function (address1, address2) {
       var a = this.stringifyAddress(address1);
       var b = this.stringifyAddress(address2);
@@ -162,15 +170,11 @@ define([
     placeCheckoutOrder: function () {
       var self = this;
 
-      if (
-        !quote.paymentMethod() ||
-        quote.paymentMethod().method !== this.getCode()
-      ) {
+      if (!this.isStillSelected()) {
         this.messageContainer.addErrorMessage({
-          message: $t(
-            "Please select Speed Bitcoin Payment before placing the order."
-          ),
+          message: $t("Please select Speed Bitcoin Payment."),
         });
+        self.isPlaceOrderActionAllowed(false);
         return false;
       }
 
@@ -198,32 +202,19 @@ define([
           agreementsAssigner.assign(paymentData);
         } else if (typeof agreementsAssigner === "function") {
           agreementsAssigner(paymentData);
-        } else {
-          var selectedIds = [];
-          if (CheckoutAgreements && CheckoutAgreements.agreements) {
-            CheckoutAgreements.agreements().forEach(function (a) {
-              var id = a.agreement_id || a.id || a.agreementId || null;
-              if (a.checked && id) selectedIds.push(id);
-            });
-          }
-
-          paymentData.additional_data = paymentData.additional_data || {};
-          paymentData.additional_data.agreement_ids = selectedIds;
         }
       } catch (e) {
-        console.error("agreements assignment failed:", e);
+        console.error("Agreement assigner error:", e);
       }
 
-      self.isPlaceOrderActionAllowed(false);
+      this.isPlaceOrderActionAllowed(false);
       fullScreenLoader.startLoader();
 
-      var currentTotals = quote.totals() || {};
-      var quoteId = quote.getQuoteId();
-
+      var totals = quote.totals() || {};
       var postdata = {
-        currency: currentTotals.base_currency_code,
-        amount: currentTotals.base_grand_total,
-        quoteid: quoteId,
+        currency: totals.base_currency_code,
+        amount: totals.base_grand_total,
+        quoteid: quote.getQuoteId(),
       };
 
       placeOrderAction(paymentData, self.messageContainer)

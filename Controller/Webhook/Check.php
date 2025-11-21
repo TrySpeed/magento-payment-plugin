@@ -74,9 +74,10 @@ class Check extends Action
         ];
 
         $url = 'https://api.tryspeed.com/webhooks/verify-secret';
-
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($curl, CURLOPT_TIMEOUT, 10);
         curl_setopt($curl, CURLOPT_POST, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($params));
         curl_setopt(
@@ -88,11 +89,9 @@ class Check extends Action
                 'speed-version: 2022-10-15'
             ]
         );
-
         $response = curl_exec($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
-
         $result = $response ? json_decode($response) : null;
 
         if ($httpCode !== 200 || !$result) {
