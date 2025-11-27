@@ -7,29 +7,29 @@ use Magento\Framework\App\Action\Context;
 use Magento\Sales\Model\OrderFactory;
 use Magento\Sales\Model\ResourceModel\Order as OrderResource;
 use Magento\Checkout\Model\Session as CheckoutSession;
-use Psr\Log\LoggerInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
 
 class Cancel extends Action
 {
     protected $checkoutSession;
     protected $orderFactory;
     protected $orderResource;
-    protected $webhooksLogger;
     protected $logger;
+    protected $scopeConfig;
 
     public function __construct(
         Context $context,
         CheckoutSession $checkoutSession,
         OrderFactory $orderFactory,
         OrderResource $orderResource,
-        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger,
-        LoggerInterface $logger
+        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $logger,
+        ScopeConfigInterface $scopeConfig,
     ) {
         $this->checkoutSession = $checkoutSession;
         $this->orderFactory = $orderFactory;
         $this->orderResource = $orderResource;
-        $this->webhooksLogger = $webhooksLogger;
         $this->logger = $logger;
+        $this->scopeConfig = $scopeConfig;
         parent::__construct($context);
     }
 
@@ -44,11 +44,14 @@ class Cancel extends Action
 
             $order = $this->orderFactory->create();
             $this->orderResource->load($order, $orderId);
+            $cancel_status = $this->scopeConfig->getValue('payment/speedBitcoinPayment/cancel_order_status', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 
             if ($order && $order->getState() !== \Magento\Sales\Model\Order::STATE_CANCELED) {
                 $order->cancel();
+                if ($cancel_status) {
+                    $order->setStatus($cancel_status);
+                }
                 $this->orderResource->save($order);
-                $this->log("Order canceled by customer. Order ID: {$orderId}");
             }
 
             $this->checkoutSession->restoreQuote();
@@ -58,10 +61,5 @@ class Cancel extends Action
         }
 
         return $this->_redirect('checkout/cart');
-    }
-
-    public function log($msg)
-    {
-        $this->webhooksLogger->info($msg);
     }
 }
