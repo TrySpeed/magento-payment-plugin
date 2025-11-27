@@ -53,5 +53,15 @@
         <source_model>Tryspeed\BitcoinPayment\Model\Config\Source\LogoDisplay</source_model>
         <config_path>payment/speedBitcoinPayment/logsec</config_path>
     </field>
+    <field id="new_order_status" translate="label" type="select" sortOrder="17" showInDefault="1" showInWebsite="1" showInStore="0" canRestore="1">
+        <label>New Order Status</label>
+        <source_model>Magento\Sales\Model\ResourceModel\Order\Status\Collection</source_model>
+        <config_path>payment/speedBitcoinPayment/new_order_status</config_path>
+    </field>
+    <field id="cancel_order_status" translate="label" type="select" sortOrder="18" showInDefault="1" showInWebsite="1" showInStore="0" canRestore="1">
+        <label>Cancel Order Status</label>
+        <source_model>Magento\Sales\Model\ResourceModel\Order\Status\Collection</source_model>
+        <config_path>payment/speedBitcoinPayment/cancel_order_status</config_path>
+    </field>
  </group>
 </include>

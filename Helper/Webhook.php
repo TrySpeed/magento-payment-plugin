@@ -12,18 +12,18 @@ class Webhook
     private $secret;
     protected $request;
     protected $response;
-    protected $webhooksLogger;
+    protected $logger;
     protected $scopeConfig;
 
     public function __construct(
         \Magento\Framework\App\Request\Http $request,
         \Magento\Framework\App\Response\Http $response,
         ScopeConfigInterface $scopeConfig,
-        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger
+        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $logger
     ) {
         $this->request = $request;
         $this->response = $response;
-        $this->webhooksLogger = $webhooksLogger;
+        $this->logger = $logger;
         $this->scopeConfig = $scopeConfig;
     }
 
@@ -43,7 +43,7 @@ class Webhook
             $msgTimestamp = $headers['webhook-timestamp'];
             $msgSignature = $headers['webhook-signature'];
         } else {
-            $this->log("WEBHOOK Headers Not Sent");
+            $this->logger->error("WEBHOOK Headers Not Sent");
             throw new WebhookException("Missing required headers");
         }
 
@@ -58,11 +58,11 @@ class Webhook
             if (hash_equals($expectedSignature, $passedSignature)) {
                 return json_decode($payload, true);
             } else {
-                $this->log("Webhook Signature not matching");
+                $this->logger->error("Webhook Signature not matching");
                 throw new WebhookException("No matching signature found");
             }
         } else {
-            $this->log("Version does not match");
+            $this->logger->warning("Version does not match");
             throw new WebhookException("No matching version found");
         }
     }
@@ -71,17 +71,11 @@ class Webhook
     {
         $is_positive_integer = ctype_digit($timestamp);
         if (!$is_positive_integer) {
-            $this->log("WEBHOOK TimeStamp is not positive integer");
             throw new WebhookException("Invalid timestamp");
         }
         $toSign = "{$msgId}.{$timestamp}.{$payload}";
         $hex_hash = hash_hmac('sha256', $toSign, $this->secret);
         $signature = base64_encode(pack('H*', $hex_hash));
         return "v1,{$signature}";
-    }
-
-    public function log($msg)
-    {
-        $this->webhooksLogger->info($msg);
     }
 }

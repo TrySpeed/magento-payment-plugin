@@ -42,7 +42,7 @@ class Check extends Action
                 'active'  => $active
             ]);
         } catch (\Exception $e) {
-            $this->log("EXCEPTION: " . $e->getMessage());
+            $this->webhooksLogger->error("EXCEPTION: " . $e->getMessage());
 
             return $result->setData([
                 'success' => false,
@@ -74,6 +74,7 @@ class Check extends Action
         ];
 
         $url = 'https://api.tryspeed.com/webhooks/verify-secret';
+
         $curl = curl_init($url);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
@@ -89,32 +90,32 @@ class Check extends Action
                 'speed-version: 2022-10-15'
             ]
         );
+
         $response = curl_exec($curl);
+        $curlError = curl_error($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
+
         $result = $response ? json_decode($response) : null;
 
         if ($httpCode !== 200 || !$result) {
-            $this->log("Webhook verify returned HTTP " . ($httpCode));
+            return false;
+        }
+
+        if ($response === false) {
+            $this->webhooksLogger->error('cURL error: ' . $curlError);
             return false;
         }
 
         if (isset($result->exists) && $result->exists === true) {
             if (isset($result->status) && strtolower($result->status) === 'active') {
-                $this->log('Webhook verify: ACTIVE');
                 return true;
             }
 
-            $this->log('Webhook verify: exists but not ACTIVE (status=' . ($result->status ?? 'n/a') . ')');
             return false;
         }
 
-        $this->log('Webhook verify: endpoint not found for provided URL/secret');
+        $this->webhooksLogger->error('Webhook verify: endpoint not found for provided URL/secret');
         return false;
-    }
-
-    private function log($msg)
-    {
-        $this->webhooksLogger->info($msg);
     }
 }

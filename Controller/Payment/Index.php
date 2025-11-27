@@ -15,7 +15,6 @@ class Index extends \Magento\Framework\App\Action\Action
     protected $checkoutHelper;
     protected $checkoutSession;
     protected $quoteFactory;
-    protected $webhooksLogger;
 
     public function __construct(
         Context $context,
@@ -25,8 +24,7 @@ class Index extends \Magento\Framework\App\Action\Action
         \Magento\Checkout\Helper\Data $checkoutHelper,
         \Magento\Checkout\Model\Session $checkoutSession,
         \Magento\Quote\Model\QuoteFactory $quoteFactory,
-        StoreManagerInterface $storeManager,
-        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger
+        StoreManagerInterface $storeManager
     ) {
         $this->resultJsonFactory = $resultJsonFactory;
         $this->resultPageFactory = $resultPageFactory;
@@ -35,7 +33,6 @@ class Index extends \Magento\Framework\App\Action\Action
         $this->checkoutSession = $checkoutSession;
         $this->quoteFactory = $quoteFactory;
         $this->storeManager = $storeManager;
-        $this->webhooksLogger = $webhooksLogger;
         parent::__construct($context);
     }
     public function execute()
@@ -93,15 +90,10 @@ class Index extends \Magento\Framework\App\Action\Action
         $result = json_decode(curl_exec($curl));
         if ($result->url) {
             $response = $this->resultJsonFactory->create();
-            $this->log('Redirecting to payment page');
             $response->setData(['redirect_url' => $result->url . "?source_type=magento2"]);
             return $response;
         } else {
             return $result;
         }
-    }
-    public function log($msg)
-    {
-        $this->webhooksLogger->info($msg);
     }
 }

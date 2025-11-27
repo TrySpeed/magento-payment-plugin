@@ -12,9 +12,7 @@ use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Service\InvoiceService;
 use Magento\Framework\DB\Transaction;
 use Magento\Sales\Model\Order\Email\Sender\InvoiceSender;
-use Psr\Log\LoggerInterface;
 use Tryspeed\BitcoinPayment\Helper\Webhook as WebhookHelper;
-use Tryspeed\BitcoinPayment\Logger\WebhooksLogger;
 use Magento\Framework\App\ProductMetadataInterface;
 use Magento\Sales\Model\Order\Email\Sender\OrderSender;
 
@@ -25,42 +23,39 @@ class Index extends Action implements CsrfAwareActionInterface
     protected $webhookHelper;
     protected $request;
     protected $response;
-    protected $webhooksLogger;
     protected $invoiceService;
     protected $transaction;
     protected $invoiceSender;
-    protected $logger;
     protected $productMetadata;
     protected $orderSender;
+    protected $logger;
 
     public function __construct(
         Context $context,
         ScopeConfigInterface $scopeConfig,
         \Magento\Framework\App\Request\Http $request,
         \Magento\Framework\App\Response\Http $response,
-        WebhooksLogger $webhooksLogger,
         WebhookHelper $webhookHelper,
         Order $orderRepository,
         InvoiceService $invoiceService,
         Transaction $transaction,
         InvoiceSender $invoiceSender,
-        LoggerInterface $logger,
         ProductMetadataInterface $productMetadata,
-        OrderSender $orderSender
+        OrderSender $orderSender,
+        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $logger
     ) {
         parent::__construct($context);
         $this->scopeConfig = $scopeConfig;
         $this->request = $request;
         $this->response = $response;
-        $this->webhooksLogger = $webhooksLogger;
         $this->webhookHelper = $webhookHelper;
         $this->orderRepository = $orderRepository;
         $this->invoiceService = $invoiceService;
         $this->transaction = $transaction;
         $this->invoiceSender = $invoiceSender;
-        $this->logger = $logger;
         $this->productMetadata = $productMetadata;
         $this->orderSender = $orderSender;
+        $this->logger = $logger;
     }
 
     /**
@@ -83,7 +78,6 @@ class Index extends Action implements CsrfAwareActionInterface
     {
         try {
             if ($this->request->getMethod() !== 'POST') {
-                $this->log('Webhook accessed with non-POST method');
                 $this->response->setStatusCode(405); // Method Not Allowed
                 return;
             }
@@ -91,11 +85,11 @@ class Index extends Action implements CsrfAwareActionInterface
             $payload = $this->request->getContent();
             $data = json_decode($payload, true);
             $magentoVersion = $this->productMetadata->getVersion();
-            $this->log("Magento Version : " . $magentoVersion);
+            $this->logger->info("Magento Version : " . $magentoVersion);
 
 
             if (!$data) {
-                $this->log('Invalid JSON payload received');
+                $this->logger->error('Invalid JSON payload received');
                 $this->response->setStatusCode(400); // Bad Request
                 return;
             }
@@ -104,35 +98,44 @@ class Index extends Action implements CsrfAwareActionInterface
             $checkoutData = $data['data']['object'] ?? null;
 
             if (!$eventType || !$checkoutData) {
-                $this->log('Webhook missing event_type or data.object');
                 $this->response->setStatusCode(400);
                 return;
             }
 
-            $this->log("Received event: {$eventType}");
-
             // Only handle successful checkout
             if ($eventType !== 'checkout_session.paid') {
-                $this->log("Skipping event type: {$eventType}");
                 $this->response->setStatusCode(204);
                 return;
             }
 
             $orderId = $checkoutData['source_id'] ?? null;
             if (!$orderId) {
-                $this->log('No Magento order ID in webhook payload');
                 $this->response->setStatusCode(400);
                 return;
             }
 
             $order = $this->orderRepository->load($orderId);
             if (!$order || !$order->getId()) {
-                $this->log("Order not found: {$orderId}");
                 $this->response->setStatusCode(404);
                 return;
             }
 
-            $this->log("Processing order ID: {$orderId}");
+            $headers = [
+                'webhook-id' => $this->request->getHeader('Webhook-Id'),
+                'webhook-timestamp' => $this->request->getHeader('Webhook-Timestamp'),
+                'webhook-signature' => $this->request->getHeader('Webhook-Signature')
+            ];
+
+            $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+            if ($trans_mode == 'test') {
+                $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/test/speed_test_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+            } elseif ($trans_mode == 'live') {
+                $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/live/speed_live_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+            }
+
+            $this->webhookHelper->verify($payload, $headers, $secretkey);
+
+            $this->logger->info("Processing order ID: {$orderId}");
 
             // Save payment info
             $payment = $order->getPayment();
@@ -152,7 +155,6 @@ class Index extends Action implements CsrfAwareActionInterface
                 }
 
                 $payment->save();
-                $this->log("Payment information saved for order ID: {$orderId}");
                 if (!$order->getEmailSent()) {
                     $order->setSendEmail(true);
                     $order->setCanSendNewEmailFlag(true);
@@ -164,7 +166,6 @@ class Index extends Action implements CsrfAwareActionInterface
 
             // Automatically create invoice
             if ($order->canInvoice()) {
-                $this->log("Order ID {$orderId} can be invoiced: true");
                 $invoice = $this->invoiceService->prepareInvoice($order);
 
                 if ($invoice && $invoice->getTotalQty()) {
@@ -177,29 +178,17 @@ class Index extends Action implements CsrfAwareActionInterface
                     $transaction->save();
 
                     $this->invoiceSender->send($invoice);
-                    $this->log("Invoice automatically created for order ID: {$orderId}");
                 } else {
-                    $this->log("Invoice not created: order has no items or zero quantity");
+                    $this->logger->error("Invoice not created: order has no items or zero quantity");
                 }
             } else {
-                $this->log("Order ID {$orderId} cannot be invoiced at this time");
+                $this->logger->error("Order ID {$orderId} cannot be invoiced at this time");
             }
 
             $this->response->setStatusCode(200);
         } catch (\Exception $e) {
             $this->logger->error('Webhook processing failed: ' . $e->getMessage());
-            $this->log('Webhook processing failed: ' . $e->getMessage());
             $this->response->setStatusCode(500);
-        }
-    }
-
-    /**
-     * Log message
-     */
-    protected function log($message)
-    {
-        if ($this->webhooksLogger) {
-            $this->webhooksLogger->info($message);
         }
     }
 }

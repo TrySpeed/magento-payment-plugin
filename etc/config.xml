@@ -14,6 +14,8 @@
                 <logsec>1</logsec>
                 <can_use_checkout>1</can_use_checkout>
                 <can_use_internal>1</can_use_internal>
+                <new_order_status>pending</new_order_status>
+                <cancel_order_status>canceled</cancel_order_status>
             </speedBitcoinPayment>
         </payment>
     </default>
