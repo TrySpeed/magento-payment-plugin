@@ -52,9 +52,9 @@ class Cancel extends Action
                     $availableStatuses = $order->getConfig()->getStatuses();
                     if (!isset($availableStatuses[$cancel_status])) {
                         $this->logger->warning('Configured cancel status does not exist: ' . $cancel_status);
-                        $cancel_status = null; // fallback
+                    } else {
+                        $order->setStatus($cancel_status);
                     }
-                    $order->setStatus($cancel_status);
                 }
                 $this->orderResource->save($order);
             }
