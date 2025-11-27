@@ -49,6 +49,11 @@ class Cancel extends Action
             if ($order && $order->getState() !== \Magento\Sales\Model\Order::STATE_CANCELED) {
                 $order->cancel();
                 if ($cancel_status) {
+                    $availableStatuses = $order->getConfig()->getStatuses();
+                    if (!isset($availableStatuses[$cancel_status])) {
+                        $this->logger->warning('Configured cancel status does not exist: ' . $cancel_status);
+                        $cancel_status = null; // fallback
+                    }
                     $order->setStatus($cancel_status);
                 }
                 $this->orderResource->save($order);

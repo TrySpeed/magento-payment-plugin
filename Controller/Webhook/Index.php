@@ -120,6 +120,21 @@ class Index extends Action implements CsrfAwareActionInterface
                 return;
             }
 
+            $headers = [
+                'webhook-id' => $this->request->getHeader('Webhook-Id'),
+                'webhook-timestamp' => $this->request->getHeader('Webhook-Timestamp'),
+                'webhook-signature' => $this->request->getHeader('Webhook-Signature')
+            ];
+
+            $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+            if ($trans_mode == 'test') {
+                $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/test/speed_test_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+            } elseif ($trans_mode == 'live') {
+                $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/live/speed_live_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+            }
+
+            $this->webhookHelper->verify($payload, $headers, $secretkey);
+
             $this->logger->info("Processing order ID: {$orderId}");
 
             // Save payment info

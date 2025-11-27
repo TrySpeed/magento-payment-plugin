@@ -92,12 +92,18 @@ class Check extends Action
         );
 
         $response = curl_exec($curl);
+        $curlError = curl_error($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
 
         $result = $response ? json_decode($response) : null;
 
         if ($httpCode !== 200 || !$result) {
+            return false;
+        }
+
+        if ($response === false) {
+            $this->webhooksLogger->error('cURL error: ' . $curlError);
             return false;
         }
 

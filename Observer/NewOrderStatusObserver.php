@@ -35,6 +35,13 @@ class NewOrderStatusObserver implements ObserverInterface
             return;
         }
 
+        if ($newStatus) {
+            $availableStatuses = $order->getConfig()->getStatuses();
+            if (!isset($availableStatuses[$newStatus])) {
+                $newStatus = null; // fallback
+            }
+        }
+
         $order->setStatus($newStatus);
 
         $this->orderResource->save($order);
