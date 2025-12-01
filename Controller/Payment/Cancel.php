@@ -37,16 +37,31 @@ class Cancel extends Action
     {
         try {
             $orderId = (int)$this->getRequest()->getParam('order_id');
-            if (!$orderId) {
-                $this->messageManager->addErrorMessage(__('Order ID missing.'));
+            $protectCode = $this->getRequest()->getParam('protected_code');
+            if (!$orderId || !$protectCode) {
+                $this->messageManager->addErrorMessage(__('Unable to cancel the order. Please contact support.'));
                 return $this->_redirect('checkout/cart');
             }
 
             $order = $this->orderFactory->create();
             $this->orderResource->load($order, $orderId);
+            if (!$order->getId()) {
+                $this->messageManager->addErrorMessage(__('Unable to cancel the order. Please contact support.'));
+                return $this->_redirect('checkout/cart');
+            }
+
             $cancel_status = $this->scopeConfig->getValue('payment/speedBitcoinPayment/cancel_order_status', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 
-            if ($order && $order->getState() !== \Magento\Sales\Model\Order::STATE_CANCELED) {
+            if (!hash_equals($order->getProtectCode(), $protectCode)) {
+                $this->logger->warning('Unauthorized order cancellation attempt', [
+                    'ip' => $this->getRequest()->getServer('REMOTE_ADDR')
+                ]);
+
+                $this->messageManager->addErrorMessage(__('Unable to cancel the order. Please contact support.'));
+                return $this->_redirect('checkout/cart');
+            }
+
+            if ($order->getState() !== \Magento\Sales\Model\Order::STATE_CANCELED) {
                 $order->cancel();
                 if ($cancel_status) {
                     $availableStatuses = $order->getConfig()->getStatuses();

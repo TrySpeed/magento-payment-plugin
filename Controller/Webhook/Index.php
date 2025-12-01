@@ -82,11 +82,24 @@ class Index extends Action implements CsrfAwareActionInterface
                 return;
             }
 
-            $payload = $this->request->getContent();
-            $data = json_decode($payload, true);
             $magentoVersion = $this->productMetadata->getVersion();
             $this->logger->info("Magento Version : " . $magentoVersion);
 
+            $headers = [
+                'webhook-id' => $this->request->getHeader('Webhook-Id'),
+                'webhook-timestamp' => $this->request->getHeader('Webhook-Timestamp'),
+                'webhook-signature' => $this->request->getHeader('Webhook-Signature')
+            ];
+
+            $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+            if ($trans_mode == 'test') {
+                $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/test/speed_test_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+            } elseif ($trans_mode == 'live') {
+                $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/live/speed_live_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+            }
+            $payload = $this->request->getContent();
+
+            $data = $this->webhookHelper->verify($payload, $headers, $secretkey);
 
             if (!$data) {
                 $this->logger->error('Invalid JSON payload received');
@@ -119,21 +132,6 @@ class Index extends Action implements CsrfAwareActionInterface
                 $this->response->setStatusCode(404);
                 return;
             }
-
-            $headers = [
-                'webhook-id' => $this->request->getHeader('Webhook-Id'),
-                'webhook-timestamp' => $this->request->getHeader('Webhook-Timestamp'),
-                'webhook-signature' => $this->request->getHeader('Webhook-Signature')
-            ];
-
-            $trans_mode = $this->scopeConfig->getValue('payment/speedBitcoinPayment/speed_mode', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-            if ($trans_mode == 'test') {
-                $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/test/speed_test_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-            } elseif ($trans_mode == 'live') {
-                $secretkey = $this->scopeConfig->getValue('payment/speedBitcoinPayment/live/speed_live_sk', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-            }
-
-            $this->webhookHelper->verify($payload, $headers, $secretkey);
 
             $this->logger->info("Processing order ID: {$orderId}");
 

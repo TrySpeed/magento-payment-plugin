@@ -15,6 +15,7 @@ class Index extends \Magento\Framework\App\Action\Action
     protected $checkoutHelper;
     protected $checkoutSession;
     protected $quoteFactory;
+    protected $webhooksLogger;
 
     public function __construct(
         Context $context,
@@ -24,7 +25,8 @@ class Index extends \Magento\Framework\App\Action\Action
         \Magento\Checkout\Helper\Data $checkoutHelper,
         \Magento\Checkout\Model\Session $checkoutSession,
         \Magento\Quote\Model\QuoteFactory $quoteFactory,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        \Tryspeed\BitcoinPayment\Logger\WebhooksLogger $webhooksLogger
     ) {
         $this->resultJsonFactory = $resultJsonFactory;
         $this->resultPageFactory = $resultPageFactory;
@@ -33,20 +35,30 @@ class Index extends \Magento\Framework\App\Action\Action
         $this->checkoutSession = $checkoutSession;
         $this->quoteFactory = $quoteFactory;
         $this->storeManager = $storeManager;
+        $this->webhooksLogger = $webhooksLogger;
         parent::__construct($context);
     }
     public function execute()
     {
         $data = $this->getRequest()->getPostValue();
         $order = $this->checkoutSession->getLastRealOrder();
-        $orderId = $order->getEntityId();
+        $response = $this->resultJsonFactory->create();
+
+        if (!$order || !$order->getEntityId()) {
+            $this->webhooksLogger->error('No valid order found in session');
+            return $response->setData(['error' => true, 'message' => 'Unable to initiate payment.']);
+        }
+        $orderId = (int)$order->getEntityId();
+        $protectCode = $order->getProtectCode();
+
         $success_url = $this->storeManager->getStore()->getUrl('checkout/onepage/success');
         $cancel_url = $this->storeManager->getStore()->getUrl(
             'tryspeed/payment/cancel',
             [
                 '_secure' => true,
                 '_query' => [
-                    'order_id' => (int)$orderId,
+                    'order_id' => $orderId,
+                    'protected_code' => $protectCode
                 ]
             ]
         );
@@ -74,22 +86,34 @@ class Index extends \Magento\Framework\App\Action\Action
         $url = 'https://api.tryspeed.com/payment-page';
         $encodedData = json_encode($params);
         $curl = curl_init($url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_CUSTOMREQUEST, "POST");
-        curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, $encodedData);
-        curl_setopt(
-            $curl,
-            CURLOPT_HTTPHEADER,
-            [
-                'Content-Type:application/json',
+        curl_setopt_array($curl, [
+            CURLOPT_RETURNTRANSFER    => true,
+            CURLOPT_POST              => true,
+            CURLOPT_POSTFIELDS        => $encodedData,
+            CURLOPT_HTTPHEADER        => [
+                'Content-Type: application/json',
                 'Authorization: Basic ' . base64_encode($key),
                 'speed-version: 2022-10-15'
-            ]
-        );
-        $result = json_decode(curl_exec($curl));
+            ],
+            CURLOPT_SSL_VERIFYPEER    => true,
+            CURLOPT_SSL_VERIFYHOST    => 2,
+            CURLOPT_TIMEOUT           => 10,
+            CURLOPT_CONNECTTIMEOUT    => 5,
+            CURLOPT_FOLLOWLOCATION    => false,
+        ]);
+
+        $curlResponse = curl_exec($curl);
+        $curlError = curl_error($curl);
+        curl_close($curl);
+
+        if ($curlError || !$curlResponse) {
+            $this->webhooksLogger->error('Speed API cURL Error', ['error' => $curlError]);
+            return $response->setData(['error' => true, 'message' => 'Unable to initiate payment.']);
+        }
+
+        $result = json_decode($curlResponse);
+
         if ($result->url) {
-            $response = $this->resultJsonFactory->create();
             $response->setData(['redirect_url' => $result->url . "?source_type=magento2"]);
             return $response;
         } else {
