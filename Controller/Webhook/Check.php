@@ -76,36 +76,32 @@ class Check extends Action
         $url = 'https://api.tryspeed.com/webhooks/verify-secret';
 
         $curl = curl_init($url);
-        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($curl, CURLOPT_CONNECTTIMEOUT, 5);
-        curl_setopt($curl, CURLOPT_TIMEOUT, 10);
-        curl_setopt($curl, CURLOPT_POST, true);
-        curl_setopt($curl, CURLOPT_POSTFIELDS, json_encode($params));
-        curl_setopt(
-            $curl,
-            CURLOPT_HTTPHEADER,
-            [
-                'Content-Type:application/json',
+        curl_setopt_array($curl, [
+            CURLOPT_RETURNTRANSFER    => true,
+            CURLOPT_CUSTOMREQUEST     => "POST",
+            CURLOPT_POST              => true,
+            CURLOPT_POSTFIELDS        => json_encode($params),
+            CURLOPT_HTTPHEADER        => [
+                'Content-Type: application/json',
                 'Authorization: Basic ' . base64_encode($key),
                 'speed-version: 2022-10-15'
-            ]
-        );
+            ],
+            CURLOPT_SSL_VERIFYPEER    => true,
+            CURLOPT_SSL_VERIFYHOST    => 2,
+            CURLOPT_TIMEOUT           => 10,
+            CURLOPT_CONNECTTIMEOUT    => 5,
+        ]);
 
         $response = curl_exec($curl);
         $curlError = curl_error($curl);
         $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
 
+        if ($httpCode !== 200 || !$response || $curlError) {
+            return false;
+        }
+
         $result = $response ? json_decode($response) : null;
-
-        if ($httpCode !== 200 || !$result) {
-            return false;
-        }
-
-        if ($response === false) {
-            $this->webhooksLogger->error('cURL error: ' . $curlError);
-            return false;
-        }
 
         if (isset($result->exists) && $result->exists === true) {
             if (isset($result->status) && strtolower($result->status) === 'active') {
