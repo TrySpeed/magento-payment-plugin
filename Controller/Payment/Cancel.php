@@ -39,14 +39,14 @@ class Cancel extends Action
             $orderId = (int)$this->getRequest()->getParam('order_id');
             $protectCode = $this->getRequest()->getParam('protected_code');
             if (!$orderId || $protectCode === null || $protectCode === '') {
-                $this->messageManager->addErrorMessage(__('Invalid cancellation request.'));
+                $this->messageManager->addErrorMessage(__('Unable to cancel the order. Please contact support.'));
                 return $this->_redirect('checkout/cart');
             }
 
             $order = $this->orderFactory->create();
             $this->orderResource->load($order, $orderId);
             if (!$order->getId()) {
-                $this->messageManager->addErrorMessage(__('Order not found.'));
+                $this->messageManager->addErrorMessage(__('Unable to cancel the order. Please contact support.'));
                 return $this->_redirect('checkout/cart');
             }
 
@@ -54,11 +54,10 @@ class Cancel extends Action
 
             if (!hash_equals($order->getProtectCode(), $protectCode)) {
                 $this->logger->warning('Unauthorized order cancellation attempt', [
-                    'order_id' => $orderId,
                     'ip' => $this->getRequest()->getServer('REMOTE_ADDR')
                 ]);
 
-                $this->messageManager->addErrorMessage(__('Unauthorized cancellation attempt.'));
+                $this->messageManager->addErrorMessage(__('Unable to cancel the order. Please contact support.'));
                 return $this->_redirect('checkout/cart');
             }
 
