@@ -38,7 +38,7 @@ class Cancel extends Action
         try {
             $orderId = (int)$this->getRequest()->getParam('order_id');
             $protectCode = $this->getRequest()->getParam('protected_code');
-            if (!$orderId || !$protectCode) {
+            if (!$orderId || $protectCode === null || $protectCode === '') {
                 $this->messageManager->addErrorMessage(__('Invalid cancellation request.'));
                 return $this->_redirect('checkout/cart');
             }

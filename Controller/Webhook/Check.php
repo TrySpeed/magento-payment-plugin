@@ -78,7 +78,6 @@ class Check extends Action
         $curl = curl_init($url);
         curl_setopt_array($curl, [
             CURLOPT_RETURNTRANSFER    => true,
-            CURLOPT_CUSTOMREQUEST     => "POST",
             CURLOPT_POST              => true,
             CURLOPT_POSTFIELDS        => json_encode($params),
             CURLOPT_HTTPHEADER        => [

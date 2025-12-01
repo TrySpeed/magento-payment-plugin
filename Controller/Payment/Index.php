@@ -42,6 +42,12 @@ class Index extends \Magento\Framework\App\Action\Action
     {
         $data = $this->getRequest()->getPostValue();
         $order = $this->checkoutSession->getLastRealOrder();
+        $response = $this->resultJsonFactory->create();
+
+        if (!$order || !$order->getEntityId()) {
+            $this->webhooksLogger->error('No valid order found in session');
+            return $response->setData(['error' => true, 'message' => 'Unable to initiate payment.']);
+        }
         $orderId = (int)$order->getEntityId();
         $protectCode = $order->getProtectCode();
 
@@ -82,7 +88,6 @@ class Index extends \Magento\Framework\App\Action\Action
         $curl = curl_init($url);
         curl_setopt_array($curl, [
             CURLOPT_RETURNTRANSFER    => true,
-            CURLOPT_CUSTOMREQUEST     => "POST",
             CURLOPT_POST              => true,
             CURLOPT_POSTFIELDS        => $encodedData,
             CURLOPT_HTTPHEADER        => [
@@ -103,14 +108,12 @@ class Index extends \Magento\Framework\App\Action\Action
 
         if ($curlError || !$curlResponse) {
             $this->webhooksLogger->error('Speed API cURL Error', ['error' => $curlError]);
-            $response = $this->resultJsonFactory->create();
             return $response->setData(['error' => true, 'message' => 'Unable to initiate payment.']);
         }
 
         $result = json_decode($curlResponse);
 
         if ($result->url) {
-            $response = $this->resultJsonFactory->create();
             $response->setData(['redirect_url' => $result->url . "?source_type=magento2"]);
             return $response;
         } else {
