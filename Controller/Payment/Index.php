@@ -103,10 +103,11 @@ class Index extends \Magento\Framework\App\Action\Action
 
         if ($curlError || !$curlResponse) {
             $this->webhooksLogger->error('Speed API cURL Error', ['error' => $curlError]);
-            return $this->jsonError('Unable to initiate payment.');
+            $response = $this->resultJsonFactory->create();
+            return $response->setData(['error' => true, 'message' => 'Unable to initiate payment.']);
         }
 
-        $result = json_decode(curl_exec($curl));
+        $result = json_decode($curlResponse);
 
         if ($result->url) {
             $response = $this->resultJsonFactory->create();

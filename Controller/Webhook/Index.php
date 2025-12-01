@@ -99,9 +99,7 @@ class Index extends Action implements CsrfAwareActionInterface
             }
             $payload = $this->request->getContent();
 
-            $response = $this->webhookHelper->verify($payload, $headers, $secretkey);
-
-            $data = json_decode($payload, true);
+            $data = $this->webhookHelper->verify($payload, $headers, $secretkey);
 
             if (!$data) {
                 $this->logger->error('Invalid JSON payload received');
