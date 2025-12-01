@@ -38,7 +38,7 @@ class Cancel extends Action
         try {
             $orderId = (int)$this->getRequest()->getParam('order_id');
             $protectCode = $this->getRequest()->getParam('protected_code');
-            if (!$orderId || $protectCode === null || $protectCode === '') {
+            if (!$orderId || !$protectCode) {
                 $this->messageManager->addErrorMessage(__('Unable to cancel the order. Please contact support.'));
                 return $this->_redirect('checkout/cart');
             }
@@ -61,7 +61,7 @@ class Cancel extends Action
                 return $this->_redirect('checkout/cart');
             }
 
-            if ($order && $order->getState() !== \Magento\Sales\Model\Order::STATE_CANCELED) {
+            if ($order->getState() !== \Magento\Sales\Model\Order::STATE_CANCELED) {
                 $order->cancel();
                 if ($cancel_status) {
                     $availableStatuses = $order->getConfig()->getStatuses();
