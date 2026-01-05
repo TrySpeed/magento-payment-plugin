@@ -41,7 +41,7 @@ define([
       logoStyle: null,
     },
 
-    webhookValidated: false,
+    webhookValidated: null,
 
     initObservable: function () {
       this._super().observe(["logoImage", "shouldDisplayImage"]);
@@ -50,6 +50,19 @@ define([
       var currentTotals = quote.totals();
       var currentBillingAddress = quote.billingAddress();
       var currentShippingAddress = quote.shippingAddress();
+
+      quote.paymentMethod.subscribe(function (method) {
+        if (method && method.method === self.getCode()) {
+          self.validateWebhook();
+        }
+      });
+
+      if (
+        quote.paymentMethod() &&
+        quote.paymentMethod().method === this.getCode()
+      ) {
+        this.validateWebhook();
+      }
 
       quote.billingAddress.subscribe(function (address) {
         if (!address) return;
@@ -90,55 +103,6 @@ define([
 
     selectPaymentMethod: function () {
       this._super();
-
-      var self = this;
-
-      $.ajax({
-        url: urlMaker.build("tryspeed/webhook/check"),
-        type: "GET",
-        showLoader: true,
-
-        success: function (response) {
-          if (!self.isStillSelected()) return;
-
-          if (!response.active) {
-            self.webhookValidated = false;
-
-            self.messageContainer.addErrorMessage({
-              message: $t(
-                "Speed Bitcoin Payment method is currently unavailable. Please choose a different payment option."
-              ),
-            });
-
-            $('input[name="payment[method]"]').prop("checked", false);
-            if (typeof self.deselectPaymentMethod === "function")
-              self.deselectPaymentMethod();
-
-            self.isPlaceOrderActionAllowed(false);
-            return;
-          }
-
-          self.webhookValidated = true;
-          self.isPlaceOrderActionAllowed(true);
-        },
-
-        error: function () {
-          if (!self.isStillSelected()) return;
-
-          self.webhookValidated = false;
-
-          self.messageContainer.addErrorMessage({
-            message: $t("Unable to validate Webhook. Please try again."),
-          });
-
-          $('input[name="payment[method]"]').prop("checked", false);
-          if (typeof self.deselectPaymentMethod === "function")
-            self.deselectPaymentMethod();
-
-          self.isPlaceOrderActionAllowed(false);
-        },
-      });
-
       return true;
     },
 
@@ -167,6 +131,64 @@ define([
       });
     },
 
+    validateWebhook: function () {
+      var self = this;
+
+      self.webhookValidated = null;
+      self.isPlaceOrderActionAllowed(false);
+
+      $.ajax({
+        url: urlMaker.build("tryspeed/webhook/check"),
+        type: "GET",
+        showLoader: true,
+        timeout: 10000,
+
+        success: function (response) {
+          if (!self.isStillSelected()) return;
+
+          if (!response.active) {
+            self.webhookValidated = false;
+
+            self.messageContainer.addErrorMessage({
+              message: $t(
+                "Speed Bitcoin Payment method is currently unavailable. Please choose a different payment option."
+              ),
+            });
+
+            if (typeof self.deselectPaymentMethod === "function") {
+              self.deselectPaymentMethod();
+            } else {
+              quote.paymentMethod(null);
+            }
+
+            self.isPlaceOrderActionAllowed(false);
+            return;
+          }
+
+          self.webhookValidated = true;
+          self.isPlaceOrderActionAllowed(true);
+        },
+
+        error: function () {
+          if (!self.isStillSelected()) return;
+
+          self.webhookValidated = false;
+
+          self.messageContainer.addErrorMessage({
+            message: $t("Unable to validate Webhook. Please try again."),
+          });
+
+          if (typeof self.deselectPaymentMethod === "function") {
+            self.deselectPaymentMethod();
+          } else {
+            quote.paymentMethod(null);
+          }
+
+          self.isPlaceOrderActionAllowed(false);
+        },
+      });
+    },
+
     placeCheckoutOrder: function () {
       var self = this;
 
@@ -178,14 +200,17 @@ define([
         return false;
       }
 
-      if (!this.webhookValidated) {
+      if (this.webhookValidated === false) {
         this.messageContainer.addErrorMessage({
           message: $t(
             "Speed Bitcoin Payment method is currently unavailable. Please choose a different payment option."
           ),
         });
-        self.isPlaceOrderActionAllowed(false);
         return false;
+      }
+
+      if (this.webhookValidated === null) {
+        return false; // still validating
       }
 
       if (!agreementValidator.validate()) {
