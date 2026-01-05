@@ -41,7 +41,7 @@ define([
       logoStyle: null,
     },
 
-    webhookValidated: false,
+    webhookValidated: null,
 
     initObservable: function () {
       this._super().observe(["logoImage", "shouldDisplayImage"]);
@@ -141,6 +141,7 @@ define([
         url: urlMaker.build("tryspeed/webhook/check"),
         type: "GET",
         showLoader: true,
+        timeout: 10000,
 
         success: function (response) {
           if (!self.isStillSelected()) return;
@@ -154,9 +155,11 @@ define([
               ),
             });
 
-            $('input[name="payment[method]"]').prop("checked", false);
-            if (typeof self.deselectPaymentMethod === "function")
+            if (typeof self.deselectPaymentMethod === "function") {
               self.deselectPaymentMethod();
+            } else {
+              quote.paymentMethod(null);
+            }
 
             self.isPlaceOrderActionAllowed(false);
             return;
@@ -175,9 +178,11 @@ define([
             message: $t("Unable to validate Webhook. Please try again."),
           });
 
-          $('input[name="payment[method]"]').prop("checked", false);
-          if (typeof self.deselectPaymentMethod === "function")
+          if (typeof self.deselectPaymentMethod === "function") {
             self.deselectPaymentMethod();
+          } else {
+            quote.paymentMethod(null);
+          }
 
           self.isPlaceOrderActionAllowed(false);
         },
