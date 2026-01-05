@@ -51,6 +51,19 @@ define([
       var currentBillingAddress = quote.billingAddress();
       var currentShippingAddress = quote.shippingAddress();
 
+      quote.paymentMethod.subscribe(function (method) {
+        if (method && method.method === self.getCode()) {
+          self.validateWebhook();
+        }
+      });
+
+      if (
+        quote.paymentMethod() &&
+        quote.paymentMethod().method === this.getCode()
+      ) {
+        this.validateWebhook();
+      }
+
       quote.billingAddress.subscribe(function (address) {
         if (!address) return;
         if (self.isAddressSame(address, currentBillingAddress)) return;
@@ -90,8 +103,40 @@ define([
 
     selectPaymentMethod: function () {
       this._super();
+      this.validateWebhook();
+      return true;
+    },
 
+    isAddressSame: function (address1, address2) {
+      var a = this.stringifyAddress(address1);
+      var b = this.stringifyAddress(address2);
+      return a == b;
+    },
+
+    showHideLogo: function (flag) {
+      if (flag == 1) $("#image-container").show();
+      else $("#image-container").hide();
+    },
+
+    getPaymentDescription: function () {
+      return window.checkoutConfig.payment.speedBitcoinPayment.description;
+    },
+
+    stringifyAddress: function (address) {
+      if (!address) return null;
+      return JSON.stringify({
+        countryId: address.countryId || "",
+        region: address.region || "",
+        city: address.city || "",
+        postcode: address.postcode || "",
+      });
+    },
+
+    validateWebhook: function () {
       var self = this;
+
+      self.webhookValidated = null;
+      self.isPlaceOrderActionAllowed(false);
 
       $.ajax({
         url: urlMaker.build("tryspeed/webhook/check"),
@@ -138,33 +183,6 @@ define([
           self.isPlaceOrderActionAllowed(false);
         },
       });
-
-      return true;
-    },
-
-    isAddressSame: function (address1, address2) {
-      var a = this.stringifyAddress(address1);
-      var b = this.stringifyAddress(address2);
-      return a == b;
-    },
-
-    showHideLogo: function (flag) {
-      if (flag == 1) $("#image-container").show();
-      else $("#image-container").hide();
-    },
-
-    getPaymentDescription: function () {
-      return window.checkoutConfig.payment.speedBitcoinPayment.description;
-    },
-
-    stringifyAddress: function (address) {
-      if (!address) return null;
-      return JSON.stringify({
-        countryId: address.countryId || "",
-        region: address.region || "",
-        city: address.city || "",
-        postcode: address.postcode || "",
-      });
     },
 
     placeCheckoutOrder: function () {
@@ -178,13 +196,20 @@ define([
         return false;
       }
 
-      if (!this.webhookValidated) {
+      if (this.webhookValidated === false) {
         this.messageContainer.addErrorMessage({
           message: $t(
             "Speed Bitcoin Payment method is currently unavailable. Please choose a different payment option."
           ),
         });
-        self.isPlaceOrderActionAllowed(false);
+        return false;
+      }
+
+      if (this.webhookValidated === null) {
+        return false; // still validating
+      }
+
+      if (!agreementValidator.validate()) {
         return false;
       }
 
