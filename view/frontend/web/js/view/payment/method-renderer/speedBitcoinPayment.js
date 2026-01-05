@@ -103,7 +103,6 @@ define([
 
     selectPaymentMethod: function () {
       this._super();
-      this.validateWebhook();
       return true;
     },
 
@@ -207,10 +206,6 @@ define([
 
       if (this.webhookValidated === null) {
         return false; // still validating
-      }
-
-      if (!agreementValidator.validate()) {
-        return false;
       }
 
       if (!agreementValidator.validate()) {
