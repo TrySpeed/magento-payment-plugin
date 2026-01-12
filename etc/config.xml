@@ -16,6 +16,8 @@
                 <can_use_internal>1</can_use_internal>
                 <new_order_status>pending</new_order_status>
                 <cancel_order_status>canceled</cancel_order_status>
+                <hide_pending_orders>0</hide_pending_orders>
+                <enable_auto_cancel>0</enable_auto_cancel>
             </speedBitcoinPayment>
         </payment>
     </default>

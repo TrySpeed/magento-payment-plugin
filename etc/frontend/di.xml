@@ -7,6 +7,9 @@
             </argument>
         </arguments>
     </type>
+    <type name="Magento\Sales\Block\Order\History">
+        <plugin name="speed_hide_orders_from_my_orders" type="Tryspeed\BitcoinPayment\Plugin\HideCustomerOrders"/>
+    </type>
     <type name="Tryspeed\BitcoinPayment\Block\Info">
         <arguments>
             <argument name="data" xsi:type="array">
