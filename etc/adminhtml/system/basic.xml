@@ -63,5 +63,21 @@
         <source_model>Magento\Sales\Model\ResourceModel\Order\Status\Collection</source_model>
         <config_path>payment/speedBitcoinPayment/cancel_order_status</config_path>
     </field>
+    <field id="hide_pending_orders" translate="label" type="select" sortOrder="19" showInDefault="1" showInWebsite="1" showInStore="0">
+        <label>Hide Pending and Abandoned Customer Orders</label>
+        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+        <config_path>payment/speedBitcoinPayment/hide_pending_orders</config_path>
+        <comment>
+         <![CDATA[Enable this option to automatically hide orders that are left pending or abandoned by customers and not completed within the defined time.]]>
+       </comment>
+    </field>
+    <field id="enable_auto_cancel" translate="label" type="select" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="0">
+        <label>Auto-Cancel Abandoned Orders</label>
+        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+        <config_path>payment/speedBitcoinPayment/enable_auto_cancel</config_path>
+        <comment>
+         <![CDATA[When enabled, the plugin runs an hourly background job to automatically cancel customer's orders that remain abandoned for more than 30 mins.]]>
+       </comment>
+    </field>
  </group>
 </include>
