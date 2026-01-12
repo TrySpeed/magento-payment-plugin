@@ -6,6 +6,8 @@ use Magento\Sales\Model\ResourceModel\Order\CollectionFactory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Sales\Model\Order;
+use Magento\Sales\Api\OrderManagementInterface;
+use Magento\Sales\Api\OrderRepositoryInterface;
 use Psr\Log\LoggerInterface;
 
 class CancelAbandonedOrders
@@ -16,15 +18,21 @@ class CancelAbandonedOrders
     protected $orderCollectionFactory;
     protected $scopeConfig;
     protected $logger;
+    protected $orderManagement;
+    protected $orderRepository;
 
     public function __construct(
         CollectionFactory $orderCollectionFactory,
         ScopeConfigInterface $scopeConfig,
-        LoggerInterface $logger
+        LoggerInterface $logger,
+        OrderManagementInterface $orderManagement,
+        OrderRepositoryInterface $orderRepository
     ) {
         $this->orderCollectionFactory = $orderCollectionFactory;
         $this->scopeConfig = $scopeConfig;
         $this->logger = $logger;
+        $this->orderManagement = $orderManagement;
+        $this->orderRepository = $orderRepository;
     }
 
     public function execute(): void
@@ -60,9 +68,12 @@ class CancelAbandonedOrders
                     continue;
                 }
 
-                $order->cancel();
-                $order->addCommentToStatusHistory(__('Order automatically canceled due to unpaid Speed payment.'));
-                $order->save();
+                $this->orderManagement->cancel($order->getEntityId());
+                $order = $this->orderRepository->get($order->getEntityId());
+                $order->addCommentToStatusHistory(
+                    __('Order automatically canceled due to unpaid Speed payment.')
+                );
+                $this->orderRepository->save($order);
             } catch (\Throwable $e) {
                 $this->logger->error(
                     'Speed auto-cancel failed for order #' . $order->getIncrementId(),

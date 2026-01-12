@@ -33,28 +33,21 @@ class HideCustomerOrders
             return $collection;
         }
 
-        $collection->addFieldToFilter(
-            'state',
-            ['nin' => [
-                Order::STATE_NEW,
-                Order::STATE_CANCELED
-            ]]
-        );
-
         $select = $collection->getSelect();
-        $from   = $select->getPart(\Zend_Db_Select::FROM);
 
+        $from = $select->getPart('from');
         if (!isset($from['payment'])) {
-            $select->join(
+            $select->joinLeft(
                 ['payment' => $collection->getTable('sales_order_payment')],
                 'main_table.entity_id = payment.parent_id',
                 []
             );
         }
 
-        $select->where(
-            'payment.method = ?',
-            self::SPEED_PAYMENT_METHOD
+        $select->where('payment.method != ?', self::SPEED_PAYMENT_METHOD);
+        $select->orWhere(
+            'main_table.state NOT IN (?)',
+            [Order::STATE_NEW, Order::STATE_CANCELED]
         );
 
         return $collection;
