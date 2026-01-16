@@ -52,7 +52,7 @@ class HideCustomerOrders
         $connection = $collection->getConnection();
 
         $condition = sprintf(
-            'NOT (payment.method = %s AND main_table.status IN (%s))',
+            'NOT (payment.method = %s AND main_table.state IN (%s))',
             $connection->quote(self::SPEED_PAYMENT_METHOD),
             implode(',', array_map([$connection, 'quote'], $hiddenStates))
         );
