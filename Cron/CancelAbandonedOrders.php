@@ -65,6 +65,15 @@ class CancelAbandonedOrders
         foreach ($collection as $order) {
             try {
                 if (!$order->canCancel()) {
+                    $this->logger->warning(
+                        'Speed auto-cancel skipped: order cannot be canceled',
+                        [
+                            'order_id'     => $order->getEntityId(),
+                            'increment_id' => $order->getIncrementId(),
+                            'state'        => $order->getState(),
+                            'status'       => $order->getStatus()
+                        ]
+                    );
                     continue;
                 }
 
