@@ -155,12 +155,6 @@ define([
               ),
             });
 
-            if (typeof self.deselectPaymentMethod === "function") {
-              self.deselectPaymentMethod();
-            } else {
-              quote.paymentMethod(null);
-            }
-
             self.isPlaceOrderActionAllowed(false);
             return;
           }
@@ -177,12 +171,6 @@ define([
           self.messageContainer.addErrorMessage({
             message: $t("Unable to validate Webhook. Please try again."),
           });
-
-          if (typeof self.deselectPaymentMethod === "function") {
-            self.deselectPaymentMethod();
-          } else {
-            quote.paymentMethod(null);
-          }
 
           self.isPlaceOrderActionAllowed(false);
         },
