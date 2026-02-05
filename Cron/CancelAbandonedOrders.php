@@ -9,10 +9,12 @@ use Magento\Sales\Model\Order;
 use Magento\Sales\Api\OrderManagementInterface;
 use Magento\Sales\Api\OrderRepositoryInterface;
 use Psr\Log\LoggerInterface;
+use Magento\Sales\Model\Order\Config as OrderConfig;
 
 class CancelAbandonedOrders
 {
     const XML_ENABLE = 'payment/speedBitcoinPayment/enable_auto_cancel';
+    const XML_CANCEL_STATUS = 'payment/speedBitcoinPayment/cancel_order_status';
     const PAYMENT_METHOD = 'speedBitcoinPayment';
 
     protected $orderCollectionFactory;
@@ -20,25 +22,28 @@ class CancelAbandonedOrders
     protected $logger;
     protected $orderManagement;
     protected $orderRepository;
+    protected $orderConfig;
 
     public function __construct(
         CollectionFactory $orderCollectionFactory,
         ScopeConfigInterface $scopeConfig,
         LoggerInterface $logger,
         OrderManagementInterface $orderManagement,
-        OrderRepositoryInterface $orderRepository
+        OrderRepositoryInterface $orderRepository,
+        OrderConfig $orderConfig
     ) {
         $this->orderCollectionFactory = $orderCollectionFactory;
         $this->scopeConfig = $scopeConfig;
         $this->logger = $logger;
         $this->orderManagement = $orderManagement;
         $this->orderRepository = $orderRepository;
+        $this->orderConfig = $orderConfig;
     }
 
     public function execute(): void
     {
 
-        if (!$this->scopeConfig->isSetFlag(self::XML_ENABLE, ScopeInterface::SCOPE_STORE)) {
+        if (!$this->scopeConfig->isSetFlag(self::XML_ENABLE)) {
             return;
         }
 
@@ -47,6 +52,19 @@ class CancelAbandonedOrders
         $thresholdTime = (new \DateTime())
             ->modify("-{$minutes} minutes")
             ->format('Y-m-d H:i:s');
+
+        $cancelStatus = $this->scopeConfig->getValue(
+            self::XML_CANCEL_STATUS
+        );
+
+        $validCancelStatuses = $this->orderConfig->getStateStatuses(Order::STATE_CANCELED);
+
+        if (!$cancelStatus || !isset($validCancelStatuses[$cancelStatus])) {
+            $this->logger->warning(
+                'Configured cancel status does not exist for canceled state: ' . (string) $cancelStatus
+            );
+            $cancelStatus = Order::STATE_CANCELED;
+        }
 
         $collection = $this->orderCollectionFactory->create();
 
@@ -79,6 +97,7 @@ class CancelAbandonedOrders
 
                 $this->orderManagement->cancel($order->getEntityId());
                 $order = $this->orderRepository->get($order->getEntityId());
+                $order->setStatus($cancelStatus);
                 $order->addCommentToStatusHistory(
                     __('Order automatically canceled due to unpaid Speed payment.')
                 );
