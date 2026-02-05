@@ -54,14 +54,15 @@ class CancelAbandonedOrders
             ->format('Y-m-d H:i:s');
 
         $cancelStatus = $this->scopeConfig->getValue(
-            self::XML_CANCEL_STATUS,
-            ScopeInterface::SCOPE_STORE
+            self::XML_CANCEL_STATUS
         );
 
-        $validCancelStatuses = $this->orderConfig->getStatuses();
+        $validCancelStatuses = $this->orderConfig->getStateStatuses(Order::STATE_CANCELED);
 
         if (!$cancelStatus || !isset($validCancelStatuses[$cancelStatus])) {
-            $this->logger->warning('Configured cancel status does not exist: ' . $cancel_status);
+            $this->logger->warning(
+                'Configured cancel status does not exist for canceled state: ' . (string) $cancelStatus
+            );
             $cancelStatus = Order::STATE_CANCELED;
         }
 
