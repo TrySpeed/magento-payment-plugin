@@ -73,6 +73,9 @@ class Index extends \Magento\Framework\App\Action\Action
         if ($statement_descriptor == '') {
             $statement_descriptor = 'Payment to Speed Magento2';
         }
+
+        $payment_description = $this->scopeConfig->getValue('payment/speedBitcoinPayment/payment_description', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+
         $params = [
             'currency' => $data['currency'],
             'amount' => $data['amount'],
@@ -83,6 +86,17 @@ class Index extends \Magento\Framework\App\Action\Action
             'source' => "Speed Magento2",
             'source_id' => $orderId
         ];
+
+        if ($payment_description != '') {
+            $storeName = $order->getStore()->getName();
+            if ($storeName == '') {
+                $storeName = 'Magento Store';
+            }
+
+            $params['title'] = $storeName;
+            $params['title_description'] = $payment_description;
+        }
+
         $url = 'https://api.tryspeed.com/payment-page';
         $encodedData = json_encode($params);
         $curl = curl_init($url);
