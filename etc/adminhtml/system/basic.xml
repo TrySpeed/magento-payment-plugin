@@ -39,7 +39,7 @@
         <validate>validate-methodSeq</validate>
         <config_path>payment/speedBitcoinPayment/sort_order</config_path>
     </field>
-    <field id="descriptor" translate="label" type="text" sortOrder="5" showInDefault="1" showInWebsite="1" showInStore="1">
+    <field id="descriptor" translate="label" type="text" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
       <label>Statement Descriptor *</label>
       <frontend_class>validate-length maximum-length-250 minimum-length-1</frontend_class>
       <config_path>payment/speedBitcoinPayment/descriptor</config_path>
@@ -48,7 +48,15 @@
          <![CDATA[This note will be visible to your customer in their wallet app when they initiate the payment.]]>
        </comment>
     </field>
-    <field id="logsec" translate="label comment" type="radios" sortOrder="6" showInDefault="1" showInWebsite="1" showInStore="1">
+    <field id="payment_description" translate="label" type="text" sortOrder="7" showInDefault="1" showInWebsite="1" showInStore="1">
+      <label>Payment Description</label>
+      <frontend_class>validate-length maximum-length-250 minimum-length-1</frontend_class>
+      <config_path>payment/speedBitcoinPayment/payment_description</config_path>
+      <comment>
+         <![CDATA[Enter a description that will be displayed to customers on the Speed payment page during checkout.]]>
+       </comment>
+    </field>
+    <field id="logsec" translate="label comment" type="radios" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="1">
         <label>Select image you want to show during customer checkout *</label>
         <source_model>Tryspeed\BitcoinPayment\Model\Config\Source\LogoDisplay</source_model>
         <config_path>payment/speedBitcoinPayment/logsec</config_path>
