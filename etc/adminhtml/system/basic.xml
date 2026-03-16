@@ -56,7 +56,15 @@
          <![CDATA[Enter a description that will be displayed to customers on the Speed payment page during checkout.]]>
        </comment>
     </field>
-    <field id="logsec" translate="label comment" type="radios" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="1">
+    <field id="checkout_ttl" translate="label" type="text" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="1">
+        <label>TTL (seconds)</label>
+        <frontend_class>validate-number validate-ttl-range</frontend_class>
+        <config_path>payment/speedBitcoinPayment/checkout_ttl</config_path>
+        <comment>
+            <![CDATA[Enter the TTL value in seconds. Minimum 300 seconds (5 minutes) and maximum 86,400 seconds (24 hours).]]>
+        </comment>
+    </field>
+    <field id="logsec" translate="label comment" type="radios" sortOrder="9" showInDefault="1" showInWebsite="1" showInStore="1">
         <label>Select image you want to show during customer checkout *</label>
         <source_model>Tryspeed\BitcoinPayment\Model\Config\Source\LogoDisplay</source_model>
         <config_path>payment/speedBitcoinPayment/logsec</config_path>

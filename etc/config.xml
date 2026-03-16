@@ -18,6 +18,7 @@
                 <cancel_order_status>canceled</cancel_order_status>
                 <hide_pending_orders>0</hide_pending_orders>
                 <enable_auto_cancel>0</enable_auto_cancel>
+                <checkout_ttl>600</checkout_ttl>
             </speedBitcoinPayment>
         </payment>
     </default>
