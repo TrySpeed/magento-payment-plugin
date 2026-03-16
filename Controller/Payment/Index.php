@@ -77,6 +77,7 @@ class Index extends \Magento\Framework\App\Action\Action
         $payment_description = $this->scopeConfig->getValue('payment/speedBitcoinPayment/payment_description', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $payment_description = trim((string)$payment_description);
         $checkoutTTL = $this->scopeConfig->getValue('payment/speedBitcoinPayment/checkout_ttl', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
+        $checkoutTTL = trim((string)$checkoutTTL);
 
         $params = [
             'currency' => $data['currency'],
