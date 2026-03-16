@@ -99,8 +99,11 @@ class Index extends \Magento\Framework\App\Action\Action
             $params['title_description'] = $payment_description;
         }
 
-        if ($checkoutTTL != '') {
-            $params['ttl'] = $checkoutTTL;
+        if ($checkoutTTL !== '' && ctype_digit($checkoutTTL)) {
+            $checkoutTTL = (int)$checkoutTTL;
+            if ($checkoutTTL >= 300 && $checkoutTTL <= 86400) {
+                $params['ttl'] = $checkoutTTL;
+            }
         }
 
         $url = 'https://api.tryspeed.com/payment-page';

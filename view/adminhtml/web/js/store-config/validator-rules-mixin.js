@@ -89,13 +89,6 @@ define(["jquery"], function ($) {
       },
       $.mage.__("TTL must be between 300 and 86400 seconds."),
     );
-    $.validator.messages.maxlength = $.mage.__(
-      "Maximu 250 characters are allowed.",
-    );
-
-    $.validator.messages.minlength = $.mage.__(
-      "Minimum 1 character is required.",
-    );
     return target;
   };
 });
