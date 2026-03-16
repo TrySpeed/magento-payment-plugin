@@ -57,8 +57,8 @@
        </comment>
     </field>
     <field id="checkout_ttl" translate="label" type="text" sortOrder="8" showInDefault="1" showInWebsite="1" showInStore="1">
-        <label>TTL (seconds)</label>
-        <frontend_class>validate-digits validate-ttl-range</frontend_class>
+        <label>TTL (seconds) *</label>
+        <frontend_class>validate-digits validate-ttl validate-ttl-range</frontend_class>
         <config_path>payment/speedBitcoinPayment/checkout_ttl</config_path>
         <comment>
             <![CDATA[Enter the TTL value in seconds. Minimum 300 seconds (5 minutes) and maximum 86,400 seconds (24 hours).]]>

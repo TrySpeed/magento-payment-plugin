@@ -14,7 +14,7 @@ define(["jquery"], function ($) {
       if (!isModuleEnabled()) {
         return true;
       }
-      return value !== "";
+      return value !== null && value.trim() !== "";
     }
     $.validator.addMethod(
       "validate-paymentMethod",
@@ -29,6 +29,13 @@ define(["jquery"], function ($) {
         return validateField(value);
       },
       $.mage.__("Enter Payment Method Description."),
+    );
+    $.validator.addMethod(
+      "validate-ttl",
+      function (value) {
+        return validateField(value);
+      },
+      $.mage.__("Enter TTL"),
     );
     $.validator.addMethod(
       "validate-methodSeq",
@@ -75,17 +82,7 @@ define(["jquery"], function ($) {
     $.validator.addMethod(
       "validate-ttl-range",
       function (value) {
-        if (!isModuleEnabled() || value === "") {
-          return true;
-        }
-
-        const ttl = parseInt(value);
-
-        if (isNaN(ttl)) {
-          return false;
-        }
-
-        return ttl >= 300 && ttl <= 86400;
+        return value >= 300 && value <= 86400;
       },
       $.mage.__("TTL must be between 300 and 86400 seconds."),
     );

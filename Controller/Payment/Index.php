@@ -77,7 +77,6 @@ class Index extends \Magento\Framework\App\Action\Action
         $payment_description = $this->scopeConfig->getValue('payment/speedBitcoinPayment/payment_description', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
         $payment_description = trim((string)$payment_description);
         $checkoutTTL = $this->scopeConfig->getValue('payment/speedBitcoinPayment/checkout_ttl', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-        $checkoutTTL = trim((string)$checkoutTTL);
 
         $params = [
             'currency' => $data['currency'],
@@ -100,16 +99,8 @@ class Index extends \Magento\Framework\App\Action\Action
             $params['title_description'] = $payment_description;
         }
 
-        if (
-            $checkoutTTL !== ''
-            && ctype_digit($checkoutTTL)
-            && strlen($checkoutTTL) <= 5
-        ) {
-            $checkoutTTL = (int)$checkoutTTL;
-
-            if ($checkoutTTL >= 300 && $checkoutTTL <= 86400) {
-                $params['ttl'] = $checkoutTTL;
-            }
+        if ($checkoutTTL !== '') {
+            $params['ttl'] = $checkoutTTL;
         }
 
         $url = 'https://api.tryspeed.com/payment-page';
