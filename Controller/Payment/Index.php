@@ -101,9 +101,8 @@ class Index extends \Magento\Framework\App\Action\Action
         }
 
         if ($checkoutTTL !== '' && ctype_digit($checkoutTTL)) {
-            $checkoutTTL = (int)$checkoutTTL;
             if ($checkoutTTL >= 300 && $checkoutTTL <= 86400) {
-                $params['ttl'] = $checkoutTTL;
+                $params['ttl'] = (int)$checkoutTTL;
             }
         }
 
