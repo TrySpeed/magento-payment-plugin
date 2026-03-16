@@ -100,9 +100,15 @@ class Index extends \Magento\Framework\App\Action\Action
             $params['title_description'] = $payment_description;
         }
 
-        if ($checkoutTTL !== '' && ctype_digit($checkoutTTL)) {
+        if (
+            $checkoutTTL !== ''
+            && ctype_digit($checkoutTTL)
+            && strlen($checkoutTTL) <= 5
+        ) {
+            $checkoutTTL = (int)$checkoutTTL;
+
             if ($checkoutTTL >= 300 && $checkoutTTL <= 86400) {
-                $params['ttl'] = (int)$checkoutTTL;
+                $params['ttl'] = $checkoutTTL;
             }
         }
 
