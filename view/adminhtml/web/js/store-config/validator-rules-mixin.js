@@ -16,6 +16,12 @@ define(["jquery"], function ($) {
       }
       return value !== null && value.trim() !== "";
     }
+    function validateTTL(value) {
+      if (!isModuleEnabled()) {
+        return true;
+      }
+      return value >= 300 && value <= 86400;
+    }
     $.validator.addMethod(
       "validate-paymentMethod",
       function (value) {
@@ -82,7 +88,7 @@ define(["jquery"], function ($) {
     $.validator.addMethod(
       "validate-ttl-range",
       function (value) {
-        return value >= 300 && value <= 86400;
+        return validateTTL(value);
       },
       $.mage.__("TTL must be between 300 and 86400 seconds."),
     );
