@@ -1,0 +1,8 @@
+name: Require Linked Issue
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+jobs:
+  issue-gate:
+    uses: TrySpeed/reusable-workflow/.github/workflows/require-linked-issue.yml@latest
+    secrets: inherit
