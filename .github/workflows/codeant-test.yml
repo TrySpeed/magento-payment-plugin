@@ -1,0 +1,17 @@
+name: CodeAnt Test Workflow
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - development
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  codeAnt:
+    uses: TrySpeed/reusable-workflow/.github/workflows/codeant-ci.yml@latest
+    secrets: inherit
