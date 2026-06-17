@@ -4,5 +4,48 @@ on:
     types: [opened, edited, synchronize, reopened]
 jobs:
   issue-gate:
-    uses: TrySpeed/reusable-workflow/.github/workflows/require-linked-issue.yml@latest
-    secrets: inherit
+    name: "issue-gate / issue-gate"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Validate linked issue from central repo
+        uses: actions/github-script@v7
+        env:
+          ISSUE_ORG: TrySpeed
+          ISSUE_REPO: project-management
+          ALLOW_CLOSED: "true"
+        with:
+          github-token: ${{ secrets.ISSUE_GATE_TOKEN }}
+          script: |
+            const org = process.env.ISSUE_ORG;
+            const repo = process.env.ISSUE_REPO;
+            const allowClosed = process.env.ALLOW_CLOSED === 'true';
+            const pr = context.payload.pull_request;
+            if (!pr) { core.setFailed('Must be triggered by a pull_request event.'); return; }
+            const body = pr.body || '';
+            const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const o = esc(org), r = esc(repo);
+            const urlPattern = new RegExp(`github\\.com/${o}/${r}/issues/(\\d+)`, 'gi');
+            const shortPattern = new RegExp(`(?<![\\w/-])${o}/${r}#(\\d+)`, 'gi');
+            const nums = new Set([
+              ...[...body.matchAll(urlPattern)].map((m) => parseInt(m[1], 10)),
+              ...[...body.matchAll(shortPattern)].map((m) => parseInt(m[1], 10)),
+            ]);
+            if (nums.size === 0) { core.setFailed(`No linked issue from ${org}/${repo} found in the PR description.`); return; }
+            const failures = [];
+            for (const n of nums) {
+              try {
+                const { data } = await github.rest.issues.get({ owner: org, repo, issue_number: n });
+                if (data.pull_request) { failures.push(`#${n} is a pull request, not an issue.`); continue; }
+                if (!allowClosed && data.state === 'closed') { failures.push(`#${n} is closed.`); continue; }
+                core.info(`Verified ${org}/${repo}#${n}: "${data.title}" [${data.state}]`);
+              } catch (e) {
+                if (e.status === 404) failures.push(`#${n} does not exist in ${org}/${repo}.`);
+                else failures.push(`Could not verify #${n} (API error ${e.status || '?'}).`);
+              }
+            }
+            if (failures.length) { core.setFailed('Linked issue validation failed:\n- ' + failures.join('\n- ')); return; }
+            core.info(`All ${nums.size} linked issue(s) verified.`);
