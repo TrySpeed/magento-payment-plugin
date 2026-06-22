@@ -7,11 +7,8 @@ jobs:
     name: "issue-gate / issue-gate"
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    permissions:
-      contents: read
-      pull-requests: read
     steps:
-      - name: Validate linked issue from central repo
+      - name: Validate references and auto-close if invalid
         uses: actions/github-script@v7
         env:
           ISSUE_ORG: TrySpeed
@@ -20,32 +17,34 @@ jobs:
         with:
           github-token: ${{ secrets.ISSUE_GATE_TOKEN }}
           script: |
-            const org = process.env.ISSUE_ORG;
-            const repo = process.env.ISSUE_REPO;
+            const org = process.env.ISSUE_ORG, repo = process.env.ISSUE_REPO;
             const allowClosed = process.env.ALLOW_CLOSED === 'true';
             const pr = context.payload.pull_request;
-            if (!pr) { core.setFailed('Must be triggered by a pull_request event.'); return; }
-            const body = pr.body || '';
-            const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            if (!pr || pr.state !== 'open') { core.info('no open PR'); return; }
+            const title = (pr.title || '').trim();
+            const body  = pr.body || '';
+            const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const o = esc(org), r = esc(repo);
-            const urlPattern = new RegExp(`github\\.com/${o}/${r}/issues/(\\d+)`, 'gi');
-            const shortPattern = new RegExp(`(?<![\\w/-])${o}/${r}#(\\d+)`, 'gi');
-            const nums = new Set([
-              ...[...body.matchAll(urlPattern)].map((m) => parseInt(m[1], 10)),
-              ...[...body.matchAll(shortPattern)].map((m) => parseInt(m[1], 10)),
-            ]);
-            if (nums.size === 0) { core.setFailed(`No linked issue from ${org}/${repo} found in the PR description.`); return; }
-            const failures = [];
-            for (const n of nums) {
+            const titleM  = title.match(/#(\d+)\s*$/);
+            const urlRe   = new RegExp(`github\\.com/${o}/${r}/issues/(\\d+)`, 'gi');
+            const shortRe = new RegExp(`(?<![\\w/-])${o}/${r}#(\\d+)`, 'gi');
+            const bodyNums = new Set([...[...body.matchAll(urlRe)].map(m=>+m[1]), ...[...body.matchAll(shortRe)].map(m=>+m[1])]);
+            const problems = [];
+            if (!titleM) problems.push(`• PR **title** must end with the issue number — e.g. \`Add account toggle #1105\``);
+            if (bodyNums.size === 0) problems.push(`• PR **description** must include the issue link — e.g. \`Refs: ${org}/${repo}#1105\``);
+            const toCheck = new Set(bodyNums); if (titleM) toCheck.add(+titleM[1]);
+            for (const n of toCheck) {
               try {
                 const { data } = await github.rest.issues.get({ owner: org, repo, issue_number: n });
-                if (data.pull_request) { failures.push(`#${n} is a pull request, not an issue.`); continue; }
-                if (!allowClosed && data.state === 'closed') { failures.push(`#${n} is closed.`); continue; }
-                core.info(`Verified ${org}/${repo}#${n}: "${data.title}" [${data.state}]`);
+                if (data.pull_request) problems.push(`• #${n} is a pull request, not an issue.`);
+                else if (!allowClosed && data.state === 'closed') problems.push(`• #${n} ("${data.title}") is closed.`);
               } catch (e) {
-                if (e.status === 404) failures.push(`#${n} does not exist in ${org}/${repo}.`);
-                else failures.push(`Could not verify #${n} (API error ${e.status || '?'}).`);
+                if (e.status === 404) problems.push(`• #${n} does not exist in ${org}/${repo}.`);
+                else problems.push(`• Could not verify #${n} (API ${e.status || '?'}).`);
               }
             }
-            if (failures.length) { core.setFailed('Linked issue validation failed:\n- ' + failures.join('\n- ')); return; }
-            core.info(`All ${nums.size} linked issue(s) verified.`);
+            if (problems.length === 0) { core.info('PR valid'); return; }
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number,
+              body: `@${pr.user.login} this PR was automatically closed ❌\n\nMissing / invalid references:\n${problems.join('\n')}\n\nFix the title/description and **reopen** the PR.` });
+            await github.rest.pulls.update({ owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, state: 'closed' });
+            core.setFailed('Auto-closed: invalid PR references.');
