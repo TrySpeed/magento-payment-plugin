@@ -1,14 +1,24 @@
 name: Require Linked Issue
+
 on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
+
 jobs:
   issue-gate:
     name: "issue-gate / issue-gate"
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      valid: ${{ steps.check.outputs.valid }}
+      reason: ${{ steps.check.outputs.reason }}
+      actor: ${{ steps.check.outputs.actor }}
+      prnum: ${{ steps.check.outputs.prnum }}
     steps:
-      - name: Validate references and auto-close if invalid
+      - name: Validate references
+        id: check
         uses: actions/github-script@v7
         env:
           ISSUE_ORG: TrySpeed
@@ -17,34 +27,106 @@ jobs:
         with:
           github-token: ${{ secrets.ISSUE_GATE_TOKEN }}
           script: |
-            const org = process.env.ISSUE_ORG, repo = process.env.ISSUE_REPO;
+            const org = process.env.ISSUE_ORG;
+            const repo = process.env.ISSUE_REPO;
             const allowClosed = process.env.ALLOW_CLOSED === 'true';
+
             const pr = context.payload.pull_request;
-            if (!pr || pr.state !== 'open') { core.info('no open PR'); return; }
+            if (!pr) {
+              core.setOutput('valid', 'true');
+              return;
+            }
+
             const title = (pr.title || '').trim();
-            const body  = pr.body || '';
-            const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            const o = esc(org), r = esc(repo);
-            const titleM  = title.match(/#(\d+)\s*$/);
-            const urlRe   = new RegExp(`github\\.com/${o}/${r}/issues/(\\d+)`, 'gi');
-            const shortRe = new RegExp(`(?<![\\w/-])${o}/${r}#(\\d+)`, 'gi');
-            const bodyNums = new Set([...[...body.matchAll(urlRe)].map(m=>+m[1]), ...[...body.matchAll(shortRe)].map(m=>+m[1])]);
+            const body = pr.body || '';
+            const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const o = esc(org);
+            const r = esc(repo);
+
+            const titleMatch = title.match(/#(\d+)\s*$/);
+            const urlPattern = new RegExp(`github\\.com/${o}/${r}/issues/(\\d+)`, 'gi');
+            const shortPattern = new RegExp(`(?<![\\w/-])${o}/${r}#(\\d+)`, 'gi');
+
+            const bodyNumbers = new Set([
+              ...[...body.matchAll(urlPattern)].map((m) => parseInt(m[1], 10)),
+              ...[...body.matchAll(shortPattern)].map((m) => parseInt(m[1], 10)),
+            ]);
+
             const problems = [];
-            if (!titleM) problems.push(`• PR **title** must end with the issue number — e.g. \`Add account toggle #1105\``);
-            if (bodyNums.size === 0) problems.push(`• PR **description** must include the issue link — e.g. \`Refs: ${org}/${repo}#1105\``);
-            const toCheck = new Set(bodyNums); if (titleM) toCheck.add(+titleM[1]);
-            for (const n of toCheck) {
+            if (!titleMatch) {
+              problems.push('• PR **title** must end with the issue number — e.g. `Add account toggle #1105`');
+            }
+            if (bodyNumbers.size === 0) {
+              problems.push(`• PR **description** must include the issue link — e.g. \`Refs: ${org}/${repo}#1105\``);
+            }
+
+            const toVerify = new Set(bodyNumbers);
+            if (titleMatch) {
+              toVerify.add(parseInt(titleMatch[1], 10));
+            }
+
+            for (const number of toVerify) {
               try {
-                const { data } = await github.rest.issues.get({ owner: org, repo, issue_number: n });
-                if (data.pull_request) problems.push(`• #${n} is a pull request, not an issue.`);
-                else if (!allowClosed && data.state === 'closed') problems.push(`• #${n} ("${data.title}") is closed.`);
-              } catch (e) {
-                if (e.status === 404) problems.push(`• #${n} does not exist in ${org}/${repo}.`);
-                else problems.push(`• Could not verify #${n} (API ${e.status || '?'}).`);
+                const { data } = await github.rest.issues.get({
+                  owner: org,
+                  repo: repo,
+                  issue_number: number,
+                });
+                if (data.pull_request) {
+                  problems.push(`• #${number} is a pull request, not an issue.`);
+                } else if (!allowClosed && data.state === 'closed') {
+                  problems.push(`• #${number} ("${data.title}") is closed.`);
+                }
+              } catch (error) {
+                if (error.status === 404) {
+                  problems.push(`• #${number} does not exist in ${org}/${repo}.`);
+                } else {
+                  problems.push(`• Could not verify #${number} (API ${error.status || '?'}).`);
+                }
               }
             }
-            if (problems.length === 0) { core.info('PR valid'); return; }
-            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: pr.number,
-              body: `@${pr.user.login} this PR was automatically closed ❌\n\nMissing / invalid references:\n${problems.join('\n')}\n\nFix the title/description and **reopen** the PR.` });
-            await github.rest.pulls.update({ owner: context.repo.owner, repo: context.repo.repo, pull_number: pr.number, state: 'closed' });
-            core.setFailed('Auto-closed: invalid PR references.');
+
+            if (problems.length === 0) {
+              core.setOutput('valid', 'true');
+              core.info('PR valid.');
+              return;
+            }
+
+            core.setOutput('valid', 'false');
+            core.setOutput('reason', problems.join('\n'));
+            core.setOutput('actor', pr.user.login);
+            core.setOutput('prnum', String(pr.number));
+            core.setFailed('Invalid PR references:\n' + problems.join('\n'));
+
+  autoclose:
+    name: autoclose
+    needs: issue-gate
+    if: ${{ always() && needs.issue-gate.outputs.valid == 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Comment and close
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.ISSUE_GATE_TOKEN }}
+          script: |
+            const reason = ${{ toJSON(needs.issue-gate.outputs.reason) }};
+            const actor = ${{ toJSON(needs.issue-gate.outputs.actor) }};
+            const number = Number(${{ toJSON(needs.issue-gate.outputs.prnum) }});
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: number,
+              body: `@${actor} this PR was automatically closed ❌\n\nMissing / invalid references:\n${reason}\n\nFix the title/description and **reopen** the PR.`,
+            });
+
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: number,
+              state: 'closed',
+            });
