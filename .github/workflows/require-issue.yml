@@ -11,14 +11,8 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-    outputs:
-      valid: ${{ steps.check.outputs.valid }}
-      reason: ${{ steps.check.outputs.reason }}
-      actor: ${{ steps.check.outputs.actor }}
-      prnum: ${{ steps.check.outputs.prnum }}
     steps:
       - name: Validate references
-        id: check
         uses: actions/github-script@v7
         env:
           ISSUE_ORG: TrySpeed
@@ -33,7 +27,6 @@ jobs:
 
             const pr = context.payload.pull_request;
             if (!pr) {
-              core.setOutput('valid', 'true');
               return;
             }
 
@@ -54,10 +47,10 @@ jobs:
 
             const problems = [];
             if (!titleMatch) {
-              problems.push('• PR **title** must end with the issue number — e.g. `Add account toggle #1105`');
+              problems.push('PR title must end with the issue number, e.g. "Add account toggle #1105"');
             }
             if (bodyNumbers.size === 0) {
-              problems.push(`• PR **description** must include the issue link — e.g. \`Refs: ${org}/${repo}#1105\``);
+              problems.push(`PR description must include the issue link, e.g. "Refs: ${org}/${repo}#1105"`);
             }
 
             const toVerify = new Set(bodyNumbers);
@@ -73,60 +66,22 @@ jobs:
                   issue_number: number,
                 });
                 if (data.pull_request) {
-                  problems.push(`• #${number} is a pull request, not an issue.`);
+                  problems.push(`#${number} is a pull request, not an issue.`);
                 } else if (!allowClosed && data.state === 'closed') {
-                  problems.push(`• #${number} ("${data.title}") is closed.`);
+                  problems.push(`#${number} ("${data.title}") is closed.`);
                 }
               } catch (error) {
                 if (error.status === 404) {
-                  problems.push(`• #${number} does not exist in ${org}/${repo}.`);
+                  problems.push(`#${number} does not exist in ${org}/${repo}.`);
                 } else {
-                  problems.push(`• Could not verify #${number} (API ${error.status || '?'}).`);
+                  problems.push(`Could not verify #${number} (API ${error.status || '?'}).`);
                 }
               }
             }
 
             if (problems.length === 0) {
-              core.setOutput('valid', 'true');
               core.info('PR valid.');
               return;
             }
 
-            core.setOutput('valid', 'false');
-            core.setOutput('reason', problems.join('\n'));
-            core.setOutput('actor', pr.user.login);
-            core.setOutput('prnum', String(pr.number));
-            core.setFailed('Invalid PR references:\n' + problems.join('\n'));
-
-  autoclose:
-    name: autoclose
-    needs: issue-gate
-    if: ${{ always() && needs.issue-gate.outputs.valid == 'false' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      pull-requests: write
-      issues: write
-    steps:
-      - name: Comment and close
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ secrets.ISSUE_GATE_TOKEN }}
-          script: |
-            const reason = ${{ toJSON(needs.issue-gate.outputs.reason) }};
-            const actor = ${{ toJSON(needs.issue-gate.outputs.actor) }};
-            const number = Number(${{ toJSON(needs.issue-gate.outputs.prnum) }});
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: number,
-              body: `@${actor} this PR was automatically closed ❌\n\nMissing / invalid references:\n${reason}\n\nFix the title/description and **reopen** the PR.`,
-            });
-
-            await github.rest.pulls.update({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: number,
-              state: 'closed',
-            });
+            core.setFailed('Linked issue check failed:\n- ' + problems.join('\n- '));
